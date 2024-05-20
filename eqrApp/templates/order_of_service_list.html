@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block pageContent %}
+<!--Section: Content-->
+<h3 class="fw-bolder">{{ page_title }}</h3>
+<hr>
+<section class="py-3">
+    <div class="container">
+        <div class="card rounded-0 shadow-sm blur">
+            <div class="card-body">
+                <div class="container-fluid">
+                    <div class="text-end mb-2">
+                        <a href="{% url 'manage-order-of-service' %}" class="btn btn-primary btn-sm rounded-0 bg-gradient"><i class="fa fa-plus"></i> Cadastro</a>
+                        <button id="print-table" class="btn btn-success btn-sm rounded-0 bg-gradient"><i class="fa fa-print"></i> Print</button>
+                    </div>
+                    <!-- Filtro de Busca -->
+                    <input type="text" id="search" class="form-control mb-2" placeholder="Buscar...">
+                    <table class="table table-stripped table-bordered" id="orders-table">
+                        <colgroup>
+                            <col width="5%">
+                            <col width="25%">
+                            <col width="15%">
+                            <col width="40%">
+                            <col width="15%">
+                        </colgroup>
+                        <thead>
+                            <tr class="bg-primary bg-gradient text-light">
+                                <th class="text-center">#</th>
+                                <th class="text-center">Código do Patrimônio</th>
+                                <th class="text-center">Data da Ordem</th>
+                                <th class="text-center">Detalhes</th>
+                                <th class="text-center">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            {% for order in orders %}
+                            <tr>
+                                <td class="text-center">{{ forloop.counter }}</td>
+                                <td class="text-center">{{ order.employee.employee_code }}</td>
+                                <td class="text-center">{{ order.order_date|date:"d/m/Y" }}</td>
+                                <td class="">{{ order.details }}</td>
+                                <td class="text-center">
+                                    <div class="dropdown">
+                                        <button class="btn btn-light border bg-gradient btn-sm rounded-0 dropdown-toggle" type="button" id="orderDD{{ order.pk }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Ação
+                                        </button>
+                                        <ul class="dropdown-menu" aria-labelledby="orderDD{{ order.pk }}">
+                                            <li><a class="dropdown-item view_detail" href="javascript:void(0)" data-url="{% url 'view-order-details' order.pk %}">Ver Detalhes</a></li>
+                                            <li><a class="dropdown-item" href="{% url 'manage-order-of-service' order.pk %}">Editar</a></li>
+                                            <li><a class="dropdown-item delete_order" href="javascript:void(0)" data-url="{% url 'delete-order' order.pk %}">Deletar</a></li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if not orders %}
+                            <tr>
+                                <th colspan="5" class="text-center">Nenhum registro encontrado.</th>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock pageContent %}
+{% block ScriptBlock %}
+<script>
+    $(function() {
+        $('table').find('td, th').addClass('align-middle px-2 py-1');
+
+        // Filtro de Busca
+        $('#search').on('keyup', function() {
+            var value = $(this).val().toLowerCase();
+            $('#table-body tr').filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+            });
+        });
+
+        $('.view_detail').click(function(){
+            uni_modal("Ver Detalhes da Ordem de Serviço", $(this).attr('data-url'), 'modal-md');
+        });
+
+        $('.delete_order').click(function(){
+            var url = $(this).attr('data-url');
+            if(confirm("Você tem certeza que deseja deletar essa Ordem de Serviço?")) {
+                $.ajax({
+                    url: url,
+                    method: 'POST',
+                    data: {
+                        csrfmiddlewaretoken: '{{ csrf_token }}'
+                    },
+                    success: function(resp) {
+                        if(resp.status == 'success') {
+                            location.reload();
+                        } else {
+                            alert(resp.msg);
+                        }
+                    }
+                });
+            }
+        });
+
+        // Print table
+        $('#print-table').click(function() {
+            var printContent = document.getElementById('orders-table');
+            var windowPrint = window.open('', '', 'width=900, height=900');
+            windowPrint.document.write('<html><head><title>Print Table</title>');
+            windowPrint.document.write('</head><body>');
+            windowPrint.document.write(printContent.outerHTML);
+            windowPrint.document.write('</body></html>');
+            windowPrint.document.close();
+            windowPrint.print();
+        });
+    });
+</script>
+{% endblock ScriptBlock %}

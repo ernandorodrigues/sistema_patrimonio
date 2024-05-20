@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block pageContent %}
+<h3 class="fw-bolder">{{ page_title }}</h3>
+<hr>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit" class="btn btn-primary">Salvar</button>
+</form>
+{% endblock %}

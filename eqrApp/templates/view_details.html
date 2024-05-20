@@ -1,0 +1,118 @@
+{% load qr_code %}
+<style>
+    #uni_modal .modal-footer {
+        display: none
+    }
+
+    #uni_modal .modal-sub-footer {
+        display: flex
+    }
+
+    #card-qr,
+    #card-avatar {
+        width: 9rem;
+        height: 9rem;
+    }
+</style>
+
+<div class="container-fluid" id="e-details">
+    <div class="row">
+        <div class="col-lg-3 col-md-4 col-sm-6">
+            <div class="d-flex justify-content-center my-4">
+                <img src="{% if employee.avatar %}{{ employee.avatar.url }}{% endif %}" id="card-avatar" class="img-thumbnail" alt="">
+            </div>
+        </div>
+        <div class="col-lg-9 col-md-8 col-sm-6">
+            <div class="lh-1">
+                <div class="row">
+                    <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
+                        <dl>
+                            <dt>Número de Tombamento</dt>
+                            <dd>{{ employee.employee_code }}</dd>
+                            <dt>Descrição</dt>
+                            <dd>{{ employee.name }}</dd>
+                            <dt>Localização</dt>
+                            <dd>{{ employee.department }}</dd>
+                            <dt>N° da Sala</dt>
+                            <dd>{{ employee.position }}</dd>
+                        </dl>
+                    </div>
+                    <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
+                        <dl>
+                            <dt>Gênero</dt>
+                            <dd>{{ employee.gender }}</dd>
+                            <dt>Data de Nascimento</dt>
+                            <dd>{{ employee.dob|date:'d/m/Y' }}</dd>
+                            <dt>Contato</dt>
+                            <dd>{{ employee.contact }}</dd>
+                            <dt>Email</dt>
+                            <dd>{{ employee.email }}</dd>
+                        </dl>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                        <dl>
+                            <dt>OBS:</dt>
+                            <dd>{{ employee.address }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Ordens de Serviço para este funcionário -->
+<div class="container mt-4">
+    <h2>Ordens de Serviço para {{ employee.name }}</h2>
+    <div class="row">
+        <div class="col">
+            <ul class="list-group">
+                {% for order in employee.orderofservice_set.all %}
+                    <li class="list-group-item">
+                        <strong>Data da Ordem:</strong> {{ order.order_date }}<br>
+                        <strong>Detalhes:</strong> {{ order.details }}
+                    </li>
+                {% empty %}
+                    <li class="list-group-item">Nenhuma ordem de serviço encontrada para este funcionário.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+    var emp_edit_url = "{% url 'edit-employee' employee.pk %}"
+    var emp_delete_url = "{% url 'delete-employee' employee.pk %}"
+</script>
+<noscript id="qr-style">
+<style>
+    * {
+        font-size: 12px;
+    }
+    * small {
+        font-size: 10px;
+    }
+    .id-card {
+        width: 2.11in;
+        height: 3.38in;
+        border: 2px solid var(--bs-dark);
+        padding: 2rem 1.5rem;
+        border-radius: 5px;
+    }
+    #card-avatar {
+        width: 1in;
+        height: 1in;
+    }
+    #card-qr {
+        width: .7in;
+        height: .7in;
+    }
+</style>
+</noscript>
+<script>
+    $(function() {
+
+    })
+</script>

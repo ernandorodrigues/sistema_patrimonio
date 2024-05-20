@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block pageContent %}
+<div class="container py-5">
+    <h3 class="fw-bolder">Detalhes da Ordem de Serviço</h3>
+    <hr>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Código do Patrimônio: {{ order.employee.employee_code }}</h5>
+            <p class="card-text"><strong>Data da Ordem:</strong> {{ order.order_date|date:"d/m/Y" }}</p>
+            <p class="card-text"><strong>Detalhes:</strong> {{ order.details }}</p>
+        </div>
+    </div>
+</div>
+{% endblock pageContent %}
