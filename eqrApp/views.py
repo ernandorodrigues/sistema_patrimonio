@@ -9,6 +9,13 @@ from django.contrib.auth import authenticate, login, logout, update_session_auth
 from django.contrib.auth.decorators import login_required
 from .forms import SaveOrderOfService
 from django.shortcuts import get_object_or_404
+from .models import Employee, OrderOfService
+
+
+
+
+
+
 
 
 
@@ -77,7 +84,7 @@ def employee_list(request):
 
     return render(request, 'employee_list.html', context)
 
-@login_required 
+@login_required
 def manage_employee(request, pk=None):
     context =context_data()
     if pk is None:
@@ -191,6 +198,7 @@ def manage_order_of_service(request, pk=None):
 
     context['form'] = form
     return render(request, 'manage_order_of_service.html', context)
+
 
 
 @login_required

@@ -41,10 +41,16 @@ class Employee(models.Model):
             imag.thumbnail(output_size)
             imag.save(self.avatar.path)
 
+
 class OrderOfService(models.Model):
         employee = models.ForeignKey(Employee, on_delete=models.CASCADE, verbose_name="Equipamento:")
+        status = models.CharField(max_length=50,
+                                  choices=(("aberto", "Aberto"), ("resolvido", "Resolvido")
+                                           ), default="Aberto")
         order_date = models.DateField()
         details = models.TextField()
+
+
 
         def __str__(self):
             return f"Order for {self.employee.employee_code} on {self.order_date}"

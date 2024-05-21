@@ -18,7 +18,8 @@
                     <table class="table table-stripped table-bordered" id="orders-table">
                         <colgroup>
                             <col width="5%">
-                            <col width="25%">
+                            <col width="5%">
+                            <col width="8%">
                             <col width="15%">
                             <col width="40%">
                             <col width="15%">
@@ -27,6 +28,7 @@
                             <tr class="bg-primary bg-gradient text-light">
                                 <th class="text-center">#</th>
                                 <th class="text-center">Código do Patrimônio</th>
+                                <th class="text-center">Estatu</th>
                                 <th class="text-center">Data da Ordem</th>
                                 <th class="text-center">Detalhes</th>
                                 <th class="text-center">Ação</th>
@@ -37,6 +39,7 @@
                             <tr>
                                 <td class="text-center">{{ forloop.counter }}</td>
                                 <td class="text-center">{{ order.employee.employee_code }}</td>
+                                <td class="">{{ order.status }}</td>
                                 <td class="text-center">{{ order.order_date|date:"d/m/Y" }}</td>
                                 <td class="">{{ order.details }}</td>
                                 <td class="text-center">

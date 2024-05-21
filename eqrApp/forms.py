@@ -9,10 +9,13 @@ from .models import OrderOfService
 class SaveOrderOfService(forms.ModelForm):
     order_date = forms.DateField(label="Service Date", widget=forms.DateInput(attrs={'type': 'date'}))
     details = forms.CharField(label="Details", widget=forms.Textarea(attrs={'rows': 3}))
+    status = forms.ChoiceField(choices=[("aberto", "Aberto"), ("resolvido", "Resolvido")],
+                               label="Status")
+
 
     class Meta:
         model = OrderOfService
-        fields = ['employee', 'order_date', 'details']
+        fields = ['employee', 'order_date', 'details', 'status']
 
 
 
