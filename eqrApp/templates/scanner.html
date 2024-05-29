@@ -5,11 +5,11 @@
     #uni_modal .modal-footer {
         display: none
     }
-    
+
     #uni_modal .modal-sub-footer {
         display: flex
     }
-    
+
     #scanner {
         width: 100%;
         height: 50vh;
@@ -18,7 +18,7 @@
         object-fit: cover;
         object-position: center center;
     }
-    
+
     #scanner-focus {
         background: #00000085;
         -webkit-clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
@@ -28,13 +28,21 @@
         top: 0;
         left: 0;
     }
+
+    #cameraDropdown {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1000;
+    }
 </style>
 <div class="container-fluid">
     <div id="scanner-holder" class="position-relative">
         <video id="scanner"></video>
-        <div id="scanner-focus" class="position-absolute">
-
-        </div>
+        <div id="scanner-focus" class="position-absolute"></div>
+        <select id="cameraDropdown" class="form-select">
+            <!-- Options will be populated dynamically -->
+        </select>
     </div>
 </div>
 <script>
@@ -58,12 +66,37 @@
             scanner.stop()
         }, 500)
     });
+
+    function startCamera(cameraId) {
+        Instascan.Camera.getCameras().then(function(cameras) {
+            const selectedCamera = cameras.find(camera => camera.id === cameraId);
+            if (selectedCamera) {
+                scanner.start(selectedCamera);
+            } else {
+                console.error('Camera not found.');
+            }
+        }).catch(function(e) {
+            console.error(e);
+        });
+    }
+
     $('#uni_modal').on('shown.bs.modal', function() {
         if ($('#scanner').length > 0) {
-            scanner.stop()
+            scanner.stop();
             Instascan.Camera.getCameras().then(function(cameras) {
                 if (cameras.length > 0) {
-                    scanner.start(cameras[0]);
+                    const cameraDropdown = document.getElementById('cameraDropdown');
+                    cameraDropdown.innerHTML = '';
+                    cameras.forEach(camera => {
+                        const option = document.createElement('option');
+                        option.value = camera.id;
+                        option.text = camera.name;
+                        cameraDropdown.appendChild(option);
+                    });
+                    cameraDropdown.addEventListener('change', function() {
+                        startCamera(this.value);
+                    });
+                    startCamera(cameras[0].id);
                 } else {
                     console.error('No cameras found.');
                 }
@@ -71,8 +104,9 @@
                 console.error(e);
             });
         }
-    })
+    });
+
     $('#uni_modal').on('hide.bs.modal', function() {
-        scanner.stop()
-    })
+        scanner.stop();
+    });
 </script>
