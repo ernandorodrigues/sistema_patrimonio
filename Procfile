@@ -1,0 +1,1 @@
+web: gunicorn django_employee_qr.wsgi --log-file -
