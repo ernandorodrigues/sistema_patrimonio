@@ -1,4 +1,5 @@
-import imp
+import importlib
+
 from django.apps import AppConfig
 
 
