@@ -1,5 +1,4 @@
 {% load qr_code %}{% load static %}
-<!-- <script src="{% static 'assets/default/js/jquery-3.6.0.min.js' %}"></script> -->
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #uni_modal .modal-footer {
@@ -58,7 +57,6 @@
 
     const scanner = new Instascan.Scanner(args);
     scanner.addListener('scan', function(content) {
-        // alert(content);
         $('.modal').modal('hide')
         start_loader()
         setTimeout(() => {
@@ -80,29 +78,42 @@
         });
     }
 
+    document.addEventListener('DOMContentLoaded', function() {
+        Instascan.Camera.getCameras().then(function(cameras) {
+            if (cameras.length > 0) {
+                const cameraDropdown = document.getElementById('cameraDropdown');
+                cameraDropdown.innerHTML = '';
+                cameras.forEach(camera => {
+                    const option = document.createElement('option');
+                    option.value = camera.id;
+                    option.text = camera.name;
+                    cameraDropdown.appendChild(option);
+                });
+
+                cameraDropdown.addEventListener('change', function() {
+                    startCamera(cameraDropdown.value);
+                });
+
+                // Start with the back camera if available
+                const backCamera = cameras.find(camera => camera.name.toLowerCase().includes('back'));
+                if (backCamera) {
+                    cameraDropdown.value = backCamera.id;
+                    startCamera(backCamera.id);
+                } else {
+                    startCamera(cameras[0].id);
+                }
+            } else {
+                console.error('No cameras found.');
+            }
+        }).catch(function(e) {
+            console.error(e);
+        });
+    });
+
     $('#uni_modal').on('shown.bs.modal', function() {
         if ($('#scanner').length > 0) {
             scanner.stop();
-            Instascan.Camera.getCameras().then(function(cameras) {
-                if (cameras.length > 0) {
-                    const cameraDropdown = document.getElementById('cameraDropdown');
-                    cameraDropdown.innerHTML = '';
-                    cameras.forEach(camera => {
-                        const option = document.createElement('option');
-                        option.value = camera.id;
-                        option.text = camera.name;
-                        cameraDropdown.appendChild(option);
-                    });
-                    cameraDropdown.addEventListener('change', function() {
-                        startCamera(this.value);
-                    });
-                    startCamera(cameras[0].id);
-                } else {
-                    console.error('No cameras found.');
-                }
-            }).catch(function(e) {
-                console.error(e);
-            });
+            startCamera(document.getElementById('cameraDropdown').value);
         }
     });
 
