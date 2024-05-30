@@ -1,4 +1,5 @@
 {% load qr_code %}{% load static %}
+<!-- <script src="{% static 'assets/default/js/jquery-3.6.0.min.js' %}"></script> -->
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #uni_modal .modal-footer {
@@ -48,7 +49,7 @@
         function startScanner() {
             const constraints = {
                 video: {
-                    facingMode: "environment" // Use câmera traseira
+                    facingMode: { exact: "environment" } // Use câmera traseira
                 }
             };
 
