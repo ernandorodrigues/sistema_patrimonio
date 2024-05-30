@@ -22,32 +22,28 @@
 
         if (videoElement) {
             let scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
-            let currentCameraIndex = 0;
-            let cameras;
 
             scanner.addListener('scan', function (content) {
                 alert('Conteúdo escaneado: ' + content);
             });
 
-            Instascan.Camera.getCameras().then(function (cameraList) {
-                if (cameraList.length > 0) {
-                    cameras = cameraList;
-                    let backCameraIndex = cameras.findIndex(camera => camera.name.toLowerCase().includes('back'));
-                    if (backCameraIndex >= 0) {
-                        currentCameraIndex = backCameraIndex;
+            Instascan.Camera.getCameras().then(function (cameras) {
+                if (cameras.length > 0) {
+                    let backCamera = cameras.find(camera => camera.name.toLowerCase().includes('back'));
+                    let frontCamera = cameras.find(camera => camera.name.toLowerCase().includes('front'));
+                    if (backCamera) {
+                        scanner.start(backCamera);
+                    } else if (frontCamera) {
+                        alert('Câmera traseira não encontrada, usando câmera frontal.');
+                        scanner.start(frontCamera);
+                    } else {
+                        scanner.start(cameras[0]);
                     }
-                    scanner.start(cameras[currentCameraIndex]);
                 } else {
                     console.error('No cameras found.');
                 }
             }).catch(function (e) {
                 console.error(e);
-            });
-
-            videoElement.addEventListener('dblclick', function () {
-                currentCameraIndex = (currentCameraIndex + 1) % cameras.length;
-                scanner.stop();
-                scanner.start(cameras[currentCameraIndex]);
             });
         } else {
             console.error('Elementos HTML não encontrados.');
