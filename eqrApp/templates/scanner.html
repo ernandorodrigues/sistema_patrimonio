@@ -39,36 +39,36 @@
         const videoElement = document.getElementById('scanner');
 
         if (videoElement) {
-            let scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
+            const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
 
             scanner.addListener('scan', function (content) {
-                // alert(content);
-                $('.modal').modal('hide')
-                start_loader()
+                $('.modal').modal('hide');
+                start_loader();
                 setTimeout(() => {
-                    uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md')
-                    scanner.stop()
+                    uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
+                    scanner.stop();
                 }, 500);
             });
 
-            Instascan.Camera.getCameras().then(function (cameras) {
-                if (cameras.length > 0) {
-                    let selectedCamera = cameras[0];
-
-                    // Tenta selecionar a câmera traseira
-                    for (let i = 0; i < cameras.length; i++) {
-                        if (cameras[i].name.toLowerCase().includes('back')) {
-                            selectedCamera = cameras[i];
-                            break;
-                        }
-                    }
-
-                    scanner.start(selectedCamera);
-                } else {
-                    console.error('No cameras found.');
+            // Configuração do getUserMedia para garantir o uso da câmera traseira
+            navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { exact: "environment" }
                 }
-            }).catch(function (e) {
-                console.error(e);
+            }).then(function (stream) {
+                videoElement.srcObject = stream;
+                videoElement.play();
+            }).catch(function (err) {
+                console.error('Error accessing camera: ', err);
+                Instascan.Camera.getCameras().then(function (cameras) {
+                    if (cameras.length > 0) {
+                        scanner.start(cameras[0]);
+                    } else {
+                        console.error('No cameras found.');
+                    }
+                }).catch(function (e) {
+                    console.error(e);
+                });
             });
 
             $('#uni_modal').on('shown.bs.modal', function () {
@@ -76,17 +76,7 @@
                     scanner.stop();
                     Instascan.Camera.getCameras().then(function (cameras) {
                         if (cameras.length > 0) {
-                            let selectedCamera = cameras[0];
-
-                            // Tenta selecionar a câmera traseira
-                            for (let i = 0; i < cameras.length; i++) {
-                                if (cameras[i].name.toLowerCase().includes('back')) {
-                                    selectedCamera = cameras[i];
-                                    break;
-                                }
-                            }
-
-                            scanner.start(selectedCamera);
+                            scanner.start(cameras[0]);
                         } else {
                             console.error('No cameras found.');
                         }
