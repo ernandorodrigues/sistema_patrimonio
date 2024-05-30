@@ -29,7 +29,7 @@
 
             Instascan.Camera.getCameras().then(function (cameras) {
                 if (cameras.length > 0) {
-                    let backCamera = cameras.find(camera => camera.name.toLowerCase().includes('back'));
+                    let backCamera = cameras.find(camera => camera.name.toLowerCase().includes('back') || camera.id.toLowerCase().includes('back'));
                     if (backCamera) {
                         scanner.start(backCamera);
                     } else {
