@@ -1,123 +1,66 @@
 {% load qr_code %}{% load static %}
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
-    #uni_modal .modal-footer {
-        display: none
-    }
-
-    #uni_modal .modal-sub-footer {
-        display: flex
+    #scanner-holder {
+        position: relative;
     }
 
     #scanner {
         width: 100%;
         height: 50vh;
-        margin: 0px auto;
-        position: relative;
         object-fit: cover;
-        object-position: center center;
-    }
-
-    #scanner-focus {
-        background: #00000085;
-        -webkit-clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
-        clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
-        height: 100%;
-        width: 100%;
-        top: 0;
-        left: 0;
-    }
-
-    #cameraDropdown {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 1000;
     }
 </style>
 <div class="container-fluid">
-    <div id="scanner-holder" class="position-relative">
+    <div>
+        <label for="cameraSelect">Selecione a Câmera:</label>
+        <select id="cameraSelect"></select>
+    </div>
+    <div id="scanner-holder">
         <video id="scanner"></video>
-        <div id="scanner-focus" class="position-absolute"></div>
-        <select id="cameraDropdown" class="form-select">
-            <!-- Options will be populated dynamically -->
-        </select>
     </div>
 </div>
 <script>
-    const args = {
-        video: document.getElementById('scanner'),
-        mirror: false
-    };
+    document.addEventListener('DOMContentLoaded', function () {
+        const videoElement = document.getElementById('scanner');
+        const cameraSelect = document.getElementById('cameraSelect');
 
-    window.URL.createObjectURL = (stream) => {
-        args.video.srcObject = stream;
-        return stream;
-    };
+        if (videoElement && cameraSelect) {
+            let scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
 
-    const scanner = new Instascan.Scanner(args);
-    scanner.addListener('scan', function(content) {
-        $('.modal').modal('hide')
-        start_loader()
-        setTimeout(() => {
-            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md')
-            scanner.stop()
-        }, 500)
-    });
+            scanner.addListener('scan', function (content) {
+                alert('Conteúdo escaneado: ' + content);
+            });
 
-    function startCamera(cameraId) {
-        Instascan.Camera.getCameras().then(function(cameras) {
-            const selectedCamera = cameras.find(camera => camera.id === cameraId);
-            if (selectedCamera) {
-                scanner.start(selectedCamera);
-            } else {
-                console.error('Camera not found.');
-            }
-        }).catch(function(e) {
-            console.error(e);
-        });
-    }
+            Instascan.Camera.getCameras().then(function (cameras) {
+                if (cameras.length > 0) {
+                    cameras.forEach((camera, index) => {
+                        let option = document.createElement('option');
+                        option.value = index;
+                        option.text = camera.name;
+                        cameraSelect.appendChild(option);
+                    });
 
-    document.addEventListener('DOMContentLoaded', function() {
-        Instascan.Camera.getCameras().then(function(cameras) {
-            if (cameras.length > 0) {
-                const cameraDropdown = document.getElementById('cameraDropdown');
-                cameraDropdown.innerHTML = '';
-                cameras.forEach(camera => {
-                    const option = document.createElement('option');
-                    option.value = camera.id;
-                    option.text = camera.name;
-                    cameraDropdown.appendChild(option);
-                });
+                    cameraSelect.addEventListener('change', function () {
+                        scanner.stop();
+                        scanner.start(cameras[cameraSelect.value]);
+                    });
 
-                cameraDropdown.addEventListener('change', function() {
-                    startCamera(cameraDropdown.value);
-                });
-
-                // Start with the back camera if available
-                const backCamera = cameras.find(camera => camera.name.toLowerCase().includes('back'));
-                if (backCamera) {
-                    cameraDropdown.value = backCamera.id;
-                    startCamera(backCamera.id);
+                    let backCameraIndex = cameras.findIndex(camera => camera.name.toLowerCase().includes('back'));
+                    if (backCameraIndex >= 0) {
+                        cameraSelect.value = backCameraIndex;
+                        scanner.start(cameras[backCameraIndex]);
+                    } else {
+                        scanner.start(cameras[0]);
+                    }
                 } else {
-                    startCamera(cameras[0].id);
+                    console.error('No cameras found.');
                 }
-            } else {
-                console.error('No cameras found.');
-            }
-        }).catch(function(e) {
-            console.error(e);
-        });
-    });
-
-    $('#uni_modal').on('shown.bs.modal', function() {
-        if ($('#scanner').length > 0) {
-            scanner.stop();
-            startCamera(document.getElementById('cameraDropdown').value);
+            }).catch(function (e) {
+                console.error(e);
+            });
+        } else {
+            console.error('Elementos HTML não encontrados.');
         }
-    });
-
-    $('#uni_modal').on('hide.bs.modal', function() {
-        scanner.stop();
     });
 </script>
