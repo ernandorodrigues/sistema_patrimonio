@@ -29,20 +29,7 @@
 
             Instascan.Camera.getCameras().then(function (cameras) {
                 if (cameras.length > 0) {
-                    let backCamera = cameras.find(camera => camera.name.toLowerCase().includes('back'));
-                    if (backCamera) {
-                        scanner.start(backCamera);
-                    } else {
-                        scanner.start(cameras[0]);
-                    }
-                } else {
-                    console.error('No cameras found.');
-                }
-            }).catch(function (e) {
-                console.error(e);
-            });
-        } else {
-            console.error('Elementos HTML não encontrados.');
-        }
-    });
-</script>
+                    let preferredCameraId = localStorage.getItem('preferredCameraId');
+                    let preferredCamera = cameras.find(camera => camera.id === preferredCameraId);
+                    if (!preferredCamera) {
+                        preferredCamera = cameras.find(camera =>
