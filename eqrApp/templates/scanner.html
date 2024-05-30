@@ -12,10 +12,6 @@
     }
 </style>
 <div class="container-fluid">
-    <div>
-        <button id="startFrontCamera">Câmera Frontal</button>
-        <button id="startBackCamera">Câmera Traseira</button>
-    </div>
     <div id="scanner-holder">
         <video id="scanner"></video>
     </div>
@@ -23,10 +19,8 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const videoElement = document.getElementById('scanner');
-        const startFrontCamera = document.getElementById('startFrontCamera');
-        const startBackCamera = document.getElementById('startBackCamera');
 
-        if (videoElement && startFrontCamera && startBackCamera) {
+        if (videoElement) {
             let scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
 
             scanner.addListener('scan', function (content) {
@@ -35,27 +29,7 @@
 
             Instascan.Camera.getCameras().then(function (cameras) {
                 if (cameras.length > 0) {
-                    let frontCamera = cameras.find(camera => camera.name.toLowerCase().includes('front'));
                     let backCamera = cameras.find(camera => camera.name.toLowerCase().includes('back'));
-
-                    startFrontCamera.addEventListener('click', function () {
-                        if (frontCamera) {
-                            scanner.stop();
-                            scanner.start(frontCamera);
-                        } else {
-                            alert('Câmera frontal não encontrada.');
-                        }
-                    });
-
-                    startBackCamera.addEventListener('click', function () {
-                        if (backCamera) {
-                            scanner.stop();
-                            scanner.start(backCamera);
-                        } else {
-                            alert('Câmera traseira não encontrada.');
-                        }
-                    });
-
                     if (backCamera) {
                         scanner.start(backCamera);
                     } else {
