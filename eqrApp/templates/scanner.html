@@ -1,5 +1,4 @@
 {% load qr_code %}{% load static %}
-<script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #scanner-holder {
         position: relative;
@@ -13,40 +12,26 @@
 </style>
 <div class="container-fluid">
     <div id="scanner-holder">
-        <video id="scanner"></video>
+        <video id="scanner" autoplay></video>
     </div>
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const videoElement = document.getElementById('scanner');
 
-        if (videoElement) {
-            let scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
-
-            scanner.addListener('scan', function (content) {
-                alert('Conteúdo escaneado: ' + content);
-            });
-
-            Instascan.Camera.getCameras().then(function (cameras) {
-                if (cameras.length > 0) {
-                    let backCamera = cameras.find(camera => camera.name.toLowerCase().includes('back'));
-                    let frontCamera = cameras.find(camera => camera.name.toLowerCase().includes('front'));
-                    if (backCamera) {
-                        scanner.start(backCamera);
-                    } else if (frontCamera) {
-                        alert('Câmera traseira não encontrada, usando câmera frontal.');
-                        scanner.start(frontCamera);
-                    } else {
-                        scanner.start(cameras[0]);
-                    }
-                } else {
-                    console.error('No cameras found.');
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { exact: "environment" }  // Try to use the back camera
                 }
-            }).catch(function (e) {
-                console.error(e);
+            }).then(function (stream) {
+                videoElement.srcObject = stream;
+                videoElement.play();
+            }).catch(function (error) {
+                console.error('Error accessing the camera: ', error);
             });
         } else {
-            console.error('Elementos HTML não encontrados.');
+            console.error('MediaDevices API not supported.');
         }
     });
 </script>
