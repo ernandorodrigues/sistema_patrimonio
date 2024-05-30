@@ -37,60 +37,55 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const videoElement = document.getElementById('scanner');
+        let currentStream = null;
 
-        if (videoElement) {
-            const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
-
-            scanner.addListener('scan', function (content) {
-                $('.modal').modal('hide');
-                start_loader();
-                setTimeout(() => {
-                    uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-                    scanner.stop();
-                }, 500);
-            });
-
-            // Configuração do getUserMedia para garantir o uso da câmera traseira
-            navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: { exact: "environment" }
-                }
-            }).then(function (stream) {
-                videoElement.srcObject = stream;
-                videoElement.play();
-            }).catch(function (err) {
-                console.error('Error accessing camera: ', err);
-                Instascan.Camera.getCameras().then(function (cameras) {
-                    if (cameras.length > 0) {
-                        scanner.start(cameras[0]);
-                    } else {
-                        console.error('No cameras found.');
-                    }
-                }).catch(function (e) {
-                    console.error(e);
-                });
-            });
-
-            $('#uni_modal').on('shown.bs.modal', function () {
-                if ($('#scanner').length > 0) {
-                    scanner.stop();
-                    Instascan.Camera.getCameras().then(function (cameras) {
-                        if (cameras.length > 0) {
-                            scanner.start(cameras[0]);
-                        } else {
-                            console.error('No cameras found.');
-                        }
-                    }).catch(function (e) {
-                        console.error(e);
-                    });
-                }
-            });
-
-            $('#uni_modal').on('hide.bs.modal', function () {
-                scanner.stop();
-            });
-        } else {
-            console.error('Elementos HTML não encontrados.');
+        function stopCurrentStream() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
         }
+
+        function startScanner() {
+            const constraints = {
+                video: {
+                    facingMode: "environment" // Use câmera traseira
+                }
+            };
+
+            navigator.mediaDevices.getUserMedia(constraints)
+                .then(function (stream) {
+                    stopCurrentStream();
+                    currentStream = stream;
+                    videoElement.srcObject = stream;
+                    videoElement.play();
+                })
+                .catch(function (err) {
+                    console.error('Error accessing camera: ', err);
+                });
+        }
+
+        const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
+        scanner.addListener('scan', function (content) {
+            $('.modal').modal('hide');
+            start_loader();
+            setTimeout(() => {
+                uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
+                scanner.stop();
+            }, 500);
+        });
+
+        $('#uni_modal').on('shown.bs.modal', function () {
+            if ($('#scanner').length > 0) {
+                scanner.stop();
+                startScanner(); // Tentar iniciar a câmera traseira
+            }
+        });
+
+        $('#uni_modal').on('hide.bs.modal', function () {
+            scanner.stop();
+            stopCurrentStream();
+        });
+
+        startScanner(); // Iniciar scanner ao carregar a página
     });
 </script>
