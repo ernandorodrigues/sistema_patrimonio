@@ -13,8 +13,8 @@
 </style>
 <div class="container-fluid">
     <div>
-        <label for="cameraSelect">Selecione a Câmera:</label>
-        <select id="cameraSelect"></select>
+        <button id="startFrontCamera">Câmera Frontal</button>
+        <button id="startBackCamera">Câmera Traseira</button>
     </div>
     <div id="scanner-holder">
         <video id="scanner"></video>
@@ -23,9 +23,10 @@
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         const videoElement = document.getElementById('scanner');
-        const cameraSelect = document.getElementById('cameraSelect');
+        const startFrontCamera = document.getElementById('startFrontCamera');
+        const startBackCamera = document.getElementById('startBackCamera');
 
-        if (videoElement && cameraSelect) {
+        if (videoElement && startFrontCamera && startBackCamera) {
             let scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
 
             scanner.addListener('scan', function (content) {
@@ -34,22 +35,29 @@
 
             Instascan.Camera.getCameras().then(function (cameras) {
                 if (cameras.length > 0) {
-                    cameras.forEach((camera, index) => {
-                        let option = document.createElement('option');
-                        option.value = index;
-                        option.text = camera.name;
-                        cameraSelect.appendChild(option);
+                    let frontCamera = cameras.find(camera => camera.name.toLowerCase().includes('front'));
+                    let backCamera = cameras.find(camera => camera.name.toLowerCase().includes('back'));
+
+                    startFrontCamera.addEventListener('click', function () {
+                        if (frontCamera) {
+                            scanner.stop();
+                            scanner.start(frontCamera);
+                        } else {
+                            alert('Câmera frontal não encontrada.');
+                        }
                     });
 
-                    cameraSelect.addEventListener('change', function () {
-                        scanner.stop();
-                        scanner.start(cameras[cameraSelect.value]);
+                    startBackCamera.addEventListener('click', function () {
+                        if (backCamera) {
+                            scanner.stop();
+                            scanner.start(backCamera);
+                        } else {
+                            alert('Câmera traseira não encontrada.');
+                        }
                     });
 
-                    let backCameraIndex = cameras.findIndex(camera => camera.name.toLowerCase().includes('back'));
-                    if (backCameraIndex >= 0) {
-                        cameraSelect.value = backCameraIndex;
-                        scanner.start(cameras[backCameraIndex]);
+                    if (backCamera) {
+                        scanner.start(backCamera);
                     } else {
                         scanner.start(cameras[0]);
                     }
