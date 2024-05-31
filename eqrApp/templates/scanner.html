@@ -46,6 +46,7 @@
     const videoElement = document.getElementById('scanner');
     const cameraSelect = document.getElementById('cameraSelect');
     let currentStream = null;
+    let scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
 
     function stopCurrentStream() {
         if (currentStream) {
@@ -57,14 +58,15 @@
         stopCurrentStream();
         const constraints = {
             video: {
-                facingMode: facingMode
+                facingMode: { exact: facingMode }
             }
         };
         navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
             currentStream = stream;
             videoElement.srcObject = stream;
+            scanner.start();
         }).catch(function (e) {
-            console.error(e);
+            console.error('Erro ao acessar a câmera: ', e);
         });
     }
 
@@ -73,27 +75,18 @@
         startScanner(facingMode);
     });
 
-    const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
-    scanner.addListener('scan', function (content) {
-        $('.modal').modal('hide');
-        start_loader();
-        setTimeout(() => {
-            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-            scanner.stop();
-        }, 500);
-    });
-
     document.addEventListener('DOMContentLoaded', function () {
-        startScanner('environment'); // Default to back camera
-        Instascan.Camera.getCameras().then(function (cameras) {
-            if (cameras.length > 0) {
-                scanner.start(cameras[0]);
-            } else {
-                console.error('No cameras found.');
-            }
-        }).catch(function (e) {
-            console.error(e);
+        scanner.addListener('scan', function (content) {
+            alert('Conteúdo escaneado: ' + content);
+            $('.modal').modal('hide');
+            start_loader();
+            setTimeout(() => {
+                uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
+                scanner.stop();
+            }, 500);
         });
+
+        startScanner('environment'); // Default to back camera
     });
 
     $('#uni_modal').on('shown.bs.modal', function () {
