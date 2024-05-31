@@ -3,17 +3,17 @@
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #uni_modal .modal-footer {
-        display: none
+        display: none;
     }
 
     #uni_modal .modal-sub-footer {
-        display: flex
+        display: flex;
     }
 
     #scanner {
         width: 100%;
         height: 50vh;
-        margin: 0px auto;
+        margin: 0 auto;
         position: relative;
         object-fit: cover;
         object-position: center center;
@@ -36,7 +36,10 @@
     </div>
     <div class="form-group">
         <label for="cameraSelect">Selecione a Câmera</label>
-        <select id="cameraSelect" class="form-control"></select>
+        <select id="cameraSelect" class="form-control">
+            <option value="environment">Traseira</option>
+            <option value="user">Frontal</option>
+        </select>
     </div>
 </div>
 <script>
@@ -50,37 +53,24 @@
         }
     }
 
-    function startScanner(camera) {
+    function startScanner(facingMode) {
         stopCurrentStream();
-        Instascan.Camera.getCameras().then(function (cameras) {
-            if (cameras.length > 0) {
-                scanner.start(camera || cameras[0]);
-                populateCameraSelect(cameras);
-            } else {
-                console.error('No cameras found.');
+        const constraints = {
+            video: {
+                facingMode: facingMode
             }
+        };
+        navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
+            currentStream = stream;
+            videoElement.srcObject = stream;
         }).catch(function (e) {
             console.error(e);
         });
     }
 
-    function populateCameraSelect(cameras) {
-        cameraSelect.innerHTML = '';
-        cameras.forEach((camera, index) => {
-            const option = document.createElement('option');
-            option.value = index;
-            option.text = camera.name || `Camera ${index + 1}`;
-            cameraSelect.appendChild(option);
-        });
-    }
-
     cameraSelect.addEventListener('change', function () {
-        const selectedCameraIndex = cameraSelect.value;
-        Instascan.Camera.getCameras().then(function (cameras) {
-            if (cameras[selectedCameraIndex]) {
-                startScanner(cameras[selectedCameraIndex]);
-            }
-        });
+        const facingMode = cameraSelect.value;
+        startScanner(facingMode);
     });
 
     const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
@@ -94,13 +84,22 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        startScanner();
+        startScanner('environment'); // Default to back camera
+        Instascan.Camera.getCameras().then(function (cameras) {
+            if (cameras.length > 0) {
+                scanner.start(cameras[0]);
+            } else {
+                console.error('No cameras found.');
+            }
+        }).catch(function (e) {
+            console.error(e);
+        });
     });
 
     $('#uni_modal').on('shown.bs.modal', function () {
         if ($('#scanner').length > 0) {
             scanner.stop();
-            startScanner();
+            startScanner(cameraSelect.value);
         }
     });
 
