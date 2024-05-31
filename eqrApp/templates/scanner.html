@@ -3,11 +3,11 @@
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #uni_modal .modal-footer {
-        display: none;
+        display: none
     }
 
     #uni_modal .modal-sub-footer {
-        display: flex;
+        display: flex
     }
 
     #scanner {
@@ -34,59 +34,78 @@
         <video id="scanner"></video>
         <div id="scanner-focus" class="position-absolute"></div>
     </div>
+    <div class="form-group">
+        <label for="cameraSelect">Selecione a Câmera</label>
+        <select id="cameraSelect" class="form-control"></select>
+    </div>
 </div>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const videoElement = document.getElementById('scanner');
-        let currentStream = null;
+    const videoElement = document.getElementById('scanner');
+    const cameraSelect = document.getElementById('cameraSelect');
+    let currentStream = null;
 
-        function stopCurrentStream() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
+    function stopCurrentStream() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+    }
+
+    function startScanner(camera) {
+        stopCurrentStream();
+        Instascan.Camera.getCameras().then(function (cameras) {
+            if (cameras.length > 0) {
+                scanner.start(camera || cameras[0]);
+                populateCameraSelect(cameras);
+            } else {
+                console.error('No cameras found.');
             }
-        }
-
-        function startScanner() {
-            const constraints = {
-                video: {
-                    facingMode: { exact: "environment" } // Use câmera traseira
-                }
-            };
-
-            navigator.mediaDevices.getUserMedia(constraints)
-                .then(function (stream) {
-                    stopCurrentStream();
-                    currentStream = stream;
-                    videoElement.srcObject = stream;
-                    videoElement.play();
-                })
-                .catch(function (err) {
-                    console.error('Error accessing camera: ', err);
-                });
-        }
-
-        const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
-        scanner.addListener('scan', function (content) {
-            $('.modal').modal('hide');
-            start_loader();
-            setTimeout(() => {
-                uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-                scanner.stop();
-            }, 500);
+        }).catch(function (e) {
+            console.error(e);
         });
+    }
 
-        $('#uni_modal').on('shown.bs.modal', function () {
-            if ($('#scanner').length > 0) {
-                scanner.stop();
-                startScanner(); // Tentar iniciar a câmera traseira
+    function populateCameraSelect(cameras) {
+        cameraSelect.innerHTML = '';
+        cameras.forEach((camera, index) => {
+            const option = document.createElement('option');
+            option.value = index;
+            option.text = camera.name || `Camera ${index + 1}`;
+            cameraSelect.appendChild(option);
+        });
+    }
+
+    cameraSelect.addEventListener('change', function () {
+        const selectedCameraIndex = cameraSelect.value;
+        Instascan.Camera.getCameras().then(function (cameras) {
+            if (cameras[selectedCameraIndex]) {
+                startScanner(cameras[selectedCameraIndex]);
             }
         });
+    });
 
-        $('#uni_modal').on('hide.bs.modal', function () {
+    const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
+    scanner.addListener('scan', function (content) {
+        $('.modal').modal('hide');
+        start_loader();
+        setTimeout(() => {
+            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
             scanner.stop();
-            stopCurrentStream();
-        });
+        }, 500);
+    });
 
-        startScanner(); // Iniciar scanner ao carregar a página
+    document.addEventListener('DOMContentLoaded', function () {
+        startScanner();
+    });
+
+    $('#uni_modal').on('shown.bs.modal', function () {
+        if ($('#scanner').length > 0) {
+            scanner.stop();
+            startScanner();
+        }
+    });
+
+    $('#uni_modal').on('hide.bs.modal', function () {
+        scanner.stop();
+        stopCurrentStream();
     });
 </script>
