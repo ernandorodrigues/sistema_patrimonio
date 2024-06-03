@@ -13,7 +13,7 @@
     #scanner {
         width: 100%;
         height: 50vh;
-        margin: 0 auto;
+        margin: 0px auto;
         position: relative;
         object-fit: cover;
         object-position: center center;
@@ -34,85 +34,75 @@
         <video id="scanner"></video>
         <div id="scanner-focus" class="position-absolute"></div>
     </div>
-    <div class="form-group">
-        <label for="cameraSelect">Selecione a Câmera</label>
-        <select id="cameraSelect" class="form-control">
-            <option value="environment">Traseira</option>
-            <option value="user">Frontal</option>
-        </select>
-    </div>
-    <button id="startScannerButton" class="btn btn-primary mt-3">Iniciar Scanner</button>
 </div>
 <script>
     const videoElement = document.getElementById('scanner');
-    const cameraSelect = document.getElementById('cameraSelect');
-    const startScannerButton = document.getElementById('startScannerButton');
-    let currentStream = null;
+    let scanner = null;
 
-    function stopCurrentStream() {
-        if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
-        }
-    }
-
-    function startScanner(facingMode) {
-        stopCurrentStream();
-        const constraints = {
-            video: {
-                facingMode: facingMode
-            }
-        };
-        navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
-            currentStream = stream;
-            videoElement.srcObject = stream;
-        }).catch(function (e) {
-            console.error(e);
-        });
-    }
-
-    cameraSelect.addEventListener('change', function () {
-        const facingMode = cameraSelect.value;
-        startScanner(facingMode);
-    });
-
-    startScannerButton.addEventListener('click', function () {
-        const facingMode = cameraSelect.value;
-        startScanner(facingMode);
-    });
-
-    const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
-    scanner.addListener('scan', function (content) {
-        $('.modal').modal('hide');
-        start_loader();
-        setTimeout(() => {
-            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-            scanner.stop();
-        }, 500);
-    });
-
-    document.addEventListener('DOMContentLoaded', function () {
-        const defaultFacingMode = 'environment'; // Padrão para a câmera traseira
-        startScanner(defaultFacingMode); // Inicia o scanner automaticamente
-        Instascan.Camera.getCameras().then(function (cameras) {
-            if (cameras.length > 0) {
-                scanner.start(cameras[0]);
+    function startScanner() {
+        Instascan.Camera.getCameras().then(function(cameras) {
+            const frontCamera = cameras.find(camera => camera.name.includes('front'));
+            if (frontCamera) {
+                scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
+                scanner.addListener('scan', function(content) {
+                    $('.modal').modal('hide');
+                    start_loader();
+                    setTimeout(() => {
+                        uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
+                        scanner.stop();
+                    }, 500);
+                });
+                scanner.start(frontCamera);
             } else {
-                console.error('Nenhuma câmera encontrada.');
+                console.error('Front camera not found.');
             }
-        }).catch(function (e) {
+        }).catch(function(e) {
             console.error(e);
         });
-    });
+    }
 
-    $('#uni_modal').on('shown.bs.modal', function () {
-        if ($('#scanner').length > 0) {
+    startScanner();
+
+    $('#uni_modal').on('hide.bs.modal', function() {
+        if (scanner) {
             scanner.stop();
-            startScanner(cameraSelect.value);
         }
     });
 
-    $('#uni_modal').on('hide.bs.modal', function () {
-        scanner.stop();
-        stopCurrentStream();
-    });
+    function start_loader() {
+        // Implementação para iniciar o loader (exemplo)
+        $('#loader').show();
+    }
+
+    function uni_modal(title, url, size) {
+        // Implementação para exibir o modal com o conteúdo do URL (exemplo)
+        $.ajax({
+            url: url,
+            success: function (response) {
+                $('#uni_modal .modal-title').text(title);
+                $('#uni_modal .modal-dialog').attr('class', 'modal-dialog ' + size);
+                $('#uni_modal .modal-content').html(response);
+                $('#uni_modal').modal('show');
+                stop_loader();
+            }
+        });
+    }
 </script>
+
+<!-- Modal HTML -->
+<div class="modal fade" id="uni_modal" tabindex="-1" aria-labelledby="uniModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uniModalLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Conteúdo carregado dinamicamente -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loader HTML -->
+<div id="loader" style="display:none;">Carregando...</div>
