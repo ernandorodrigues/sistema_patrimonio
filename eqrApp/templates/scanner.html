@@ -13,7 +13,7 @@
     #scanner {
         width: 100%;
         height: 50vh;
-        margin: 0 auto;
+        margin: 0px auto;
         position: relative;
         object-fit: cover;
         object-position: center center;
@@ -36,9 +36,18 @@
     </div>
 </div>
 <script>
-    const scanner = new Instascan.Scanner({ video: document.getElementById('scanner'), mirror: false });
+    const args = {
+        video: document.getElementById('scanner'),
+        mirror: false
+    };
 
-    scanner.addListener('scan', function (content) {
+    window.URL.createObjectURL = (stream) => {
+        args.video.srcObject = stream;
+        return stream;
+    };
+
+    const scanner = new Instascan.Scanner(args);
+    scanner.addListener('scan', function(content) {
         $('.modal').modal('hide');
         start_loader();
         setTimeout(() => {
@@ -47,23 +56,29 @@
         }, 500);
     });
 
-    $('#uni_modal').on('shown.bs.modal', function () {
+    $('#uni_modal').on('shown.bs.modal', function() {
         if ($('#scanner').length > 0) {
             scanner.stop();
-            Instascan.Camera.getCameras().then(function (cameras) {
+            Instascan.Camera.getCameras().then(function(cameras) {
                 if (cameras.length > 0) {
-                    const backCamera = cameras.find(camera => camera.name.toLowerCase().includes('back')) || cameras[0];
-                    scanner.start(backCamera);
+                    let selectedCamera = cameras[0];  // Default to the first camera
+                    for (let camera of cameras) {
+                        if (camera.name.toLowerCase().includes('back')) {
+                            selectedCamera = camera;
+                            break;
+                        }
+                    }
+                    scanner.start(selectedCamera);
                 } else {
                     console.error('No cameras found.');
                 }
-            }).catch(function (e) {
+            }).catch(function(e) {
                 console.error(e);
             });
         }
     });
 
-    $('#uni_modal').on('hide.bs.modal', function () {
+    $('#uni_modal').on('hide.bs.modal', function() {
         scanner.stop();
     });
 </script>
