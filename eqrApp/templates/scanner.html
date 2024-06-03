@@ -41,10 +41,12 @@
             <option value="user">Frontal</option>
         </select>
     </div>
+    <button id="startScannerButton" class="btn btn-primary mt-3">Iniciar Scanner</button>
 </div>
 <script>
     const videoElement = document.getElementById('scanner');
     const cameraSelect = document.getElementById('cameraSelect');
+    const startScannerButton = document.getElementById('startScannerButton');
     let currentStream = null;
 
     function stopCurrentStream() {
@@ -73,6 +75,11 @@
         startScanner(facingMode);
     });
 
+    startScannerButton.addEventListener('click', function () {
+        const facingMode = cameraSelect.value;
+        startScanner(facingMode);
+    });
+
     const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
     scanner.addListener('scan', function (content) {
         $('.modal').modal('hide');
@@ -84,12 +91,13 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        startScanner('environment'); // Default to back camera
+        const defaultFacingMode = 'environment'; // Padrão para a câmera traseira
+        startScanner(defaultFacingMode); // Inicia o scanner automaticamente
         Instascan.Camera.getCameras().then(function (cameras) {
             if (cameras.length > 0) {
                 scanner.start(cameras[0]);
             } else {
-                console.error('No cameras found.');
+                console.error('Nenhuma câmera encontrada.');
             }
         }).catch(function (e) {
             console.error(e);
