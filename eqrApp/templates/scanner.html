@@ -59,20 +59,26 @@
         }, 500)
     });
     $('#uni_modal').on('shown.bs.modal', function() {
-        if ($('#scanner').length > 0) {
-            scanner.stop()
-            Instascan.Camera.getCameras().then(function(cameras) {
-                if (cameras.length > 0) {
-                    scanner.start(cameras[1]);
-                } else {
-                    console.error('No cameras found.');
+    if ($('#scanner').length > 0) {
+        scanner.stop(); // Para o scanner se estiver em execução
+        // Obtém uma lista de câmeras disponíveis
+        Instascan.Camera.getCameras().then(function(cameras) {
+            if (cameras.length > 0) {
+                // Itera sobre as câmeras para encontrar a câmera traseira
+                for (let i = 0; i < cameras.length; i++) {
+                    if (cameras[i].facingMode === 'environment') {
+                        // Inicia o scanner com a câmera traseira encontrada
+                        scanner.start(cameras[i]);
+                        return; // Sai do loop assim que encontrar a câmera traseira
+                    }
                 }
-            }).catch(function(e) {
-                console.error(e);
-            });
-        }
-    })
-    $('#uni_modal').on('hide.bs.modal', function() {
-        scanner.stop()
-    })
+                console.error('No rear camera found.'); // Exibe um erro se nenhuma câmera traseira for encontrada
+            } else {
+                console.error('No cameras found.'); // Exibe um erro se nenhuma câmera for encontrada
+            }
+        }).catch(function(e) {
+            console.error(e); // Exibe um erro se ocorrer um problema ao obter as câmeras
+        });
+    }
+});
 </script>
