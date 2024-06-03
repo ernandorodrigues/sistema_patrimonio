@@ -12,14 +12,6 @@ from django.shortcuts import get_object_or_404
 from .models import Employee, OrderOfService
 
 
-
-
-
-
-
-
-
-
 def context_data():
     context = {
         'page_name' : '',
