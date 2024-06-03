@@ -61,8 +61,8 @@
             scanner.stop();
             Instascan.Camera.getCameras().then(function(cameras) {
                 if (cameras.length > 0) {
-                    const frontCamera = getFrontCamera(cameras);
-                    scanner.start(frontCamera);
+                    const backCamera = getBackCamera(cameras);
+                    scanner.start(backCamera);
                 } else {
                     console.error('No cameras found.');
                 }
@@ -76,8 +76,8 @@
         scanner.stop();
     });
 
-    function getFrontCamera(cameras) {
-        // Filtra as câmeras que são do tipo 'front'
-        return cameras.find(camera => camera.name.toLowerCase().includes('front')) || cameras[0];
+    function getBackCamera(cameras) {
+        // Filtra as câmeras que não são do tipo 'front'
+        return cameras.find(camera => !camera.name.toLowerCase().includes('front')) || cameras[0];
     }
 </script>
