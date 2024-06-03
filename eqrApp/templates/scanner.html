@@ -36,18 +36,9 @@
     </div>
 </div>
 <script>
-    const args = {
-        video: document.getElementById('scanner'),
-        mirror: false
-    };
+    const scanner = new Instascan.Scanner({ video: document.getElementById('scanner'), mirror: false });
 
-    window.URL.createObjectURL = (stream) => {
-        args.video.srcObject = stream;
-        return stream;
-    };
-
-    const scanner = new Instascan.Scanner(args);
-    scanner.addListener('scan', function(content) {
+    scanner.addListener('scan', function (content) {
         $('.modal').modal('hide');
         start_loader();
         setTimeout(() => {
@@ -56,28 +47,23 @@
         }, 500);
     });
 
-    $('#uni_modal').on('shown.bs.modal', function() {
+    $('#uni_modal').on('shown.bs.modal', function () {
         if ($('#scanner').length > 0) {
             scanner.stop();
-            Instascan.Camera.getCameras().then(function(cameras) {
+            Instascan.Camera.getCameras().then(function (cameras) {
                 if (cameras.length > 0) {
-                    const backCamera = getBackCamera(cameras);
+                    const backCamera = cameras.find(camera => camera.name.toLowerCase().includes('back')) || cameras[0];
                     scanner.start(backCamera);
                 } else {
                     console.error('No cameras found.');
                 }
-            }).catch(function(e) {
+            }).catch(function (e) {
                 console.error(e);
             });
         }
     });
 
-    $('#uni_modal').on('hide.bs.modal', function() {
+    $('#uni_modal').on('hide.bs.modal', function () {
         scanner.stop();
     });
-
-    function getBackCamera(cameras) {
-        // Filtra as câmeras que não são do tipo 'front'
-        return cameras.find(camera => !camera.name.toLowerCase().includes('front')) || cameras[0];
-    }
 </script>
