@@ -1,5 +1,4 @@
 {% load qr_code %}{% load static %}
-<!-- <script src="{% static 'assets/default/js/jquery-3.6.0.min.js' %}"></script> -->
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #uni_modal .modal-footer {
@@ -13,7 +12,7 @@
     #scanner {
         width: 100%;
         height: 50vh;
-        margin: 0px auto;
+        margin: 0 auto;
         position: relative;
         object-fit: cover;
         object-position: center center;
@@ -34,17 +33,9 @@
         <video id="scanner"></video>
         <div id="scanner-focus" class="position-absolute"></div>
     </div>
-    <div class="form-group">
-        <label for="cameraSelect">Selecione a Câmera</label>
-        <select id="cameraSelect" class="form-control">
-            <option value="environment">Traseira</option>
-            <option value="user">Frontal</option>
-        </select>
-    </div>
 </div>
 <script>
     const videoElement = document.getElementById('scanner');
-    const cameraSelect = document.getElementById('cameraSelect');
     let currentStream = null;
 
     function stopCurrentStream() {
@@ -68,11 +59,6 @@
         });
     }
 
-    cameraSelect.addEventListener('change', function () {
-        const facingMode = cameraSelect.value;
-        startScanner(facingMode);
-    });
-
     const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
     scanner.addListener('scan', function (content) {
         $('.modal').modal('hide');
@@ -84,7 +70,7 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        startScanner('environment'); // Default to back camera
+        startScanner('environment'); // Definindo a câmera traseira como padrão
         Instascan.Camera.getCameras().then(function (cameras) {
             if (cameras.length > 0) {
                 scanner.start(cameras[0]);
@@ -99,7 +85,7 @@
     $('#uni_modal').on('shown.bs.modal', function () {
         if ($('#scanner').length > 0) {
             scanner.stop();
-            startScanner(cameraSelect.value);
+            startScanner('environment'); // Definindo a câmera traseira como padrão ao abrir o modal
         }
     });
 
