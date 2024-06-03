@@ -27,16 +27,32 @@
         top: 0;
         left: 0;
     }
+
+    /* Estilo para o sinalizador */
+    #qr-detected {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: green;
+        font-size: 24px;
+    }
 </style>
 <div class="container-fluid">
     <div id="scanner-holder" class="position-relative">
         <video id="scanner"></video>
         <div id="scanner-focus" class="position-absolute"></div>
+        <div id="qr-detected"></div> <!-- Sinalizador de QR Code detectado -->
+    </div>
+    <div class="form-group">
+        <button id="start-scanner-btn" class="btn btn-primary">Iniciar Leitura</button> <!-- Botão para iniciar a leitura -->
     </div>
 </div>
 <script>
     const videoElement = document.getElementById('scanner');
+    const qrDetectedElement = document.getElementById('qr-detected');
+    const startScannerBtn = document.getElementById('start-scanner-btn');
     let currentStream = null;
+    let scanner = null;
 
     function stopCurrentStream() {
         if (currentStream) {
@@ -54,43 +70,28 @@
         navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
             currentStream = stream;
             videoElement.srcObject = stream;
+            qrDetectedElement.innerText = ''; // Limpa o sinalizador quando a leitura é iniciada
+            startScannerBtn.disabled = true; // Desabilita o botão de iniciar leitura
+            scanner.start(videoElement); // Inicia o scanner
         }).catch(function (e) {
             console.error(e);
         });
     }
 
-    const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
-    scanner.addListener('scan', function (content) {
-        $('.modal').modal('hide');
-        start_loader();
-        setTimeout(() => {
-            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-            scanner.stop();
-        }, 500);
-    });
-
     document.addEventListener('DOMContentLoaded', function () {
-        startScanner('environment'); // Definindo a câmera traseira como padrão
-        Instascan.Camera.getCameras().then(function (cameras) {
-            if (cameras.length > 0) {
-                scanner.start(cameras[0]);
-            } else {
-                console.error('No cameras found.');
-            }
-        }).catch(function (e) {
-            console.error(e);
+        scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
+        scanner.addListener('scan', function (content) {
+            qrDetectedElement.innerText = 'QR Code Detectado'; // Define o sinalizador quando um QR Code é detectado
+            $('.modal').modal('hide');
+            start_loader();
+            setTimeout(() => {
+                uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
+                scanner.stop();
+            }, 500);
         });
     });
 
-    $('#uni_modal').on('shown.bs.modal', function () {
-        if ($('#scanner').length > 0) {
-            scanner.stop();
-            startScanner('environment'); // Definindo a câmera traseira como padrão ao abrir o modal
-        }
-    });
-
-    $('#uni_modal').on('hide.bs.modal', function () {
-        scanner.stop();
-        stopCurrentStream();
+    startScannerBtn.addEventListener('click', function () {
+        startScanner('environment'); // Inicia a leitura com a câmera traseira
     });
 </script>
