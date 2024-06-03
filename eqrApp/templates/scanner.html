@@ -59,9 +59,11 @@
                 scanner.start(selectedCamera);
             } else {
                 console.error(`No ${facingMode} camera found.`);
+                alert("Nenhuma câmera encontrada. Verifique se a câmera está disponível e se as permissões foram concedidas.");
             }
         }).catch(function (e) {
             console.error(e);
+            alert("Erro ao acessar a câmera. Verifique se as permissões foram concedidas.");
         });
     }
 
