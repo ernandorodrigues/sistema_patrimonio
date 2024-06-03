@@ -1,96 +1,110 @@
-{% load qr_code %} <!-- Carrega a tag qr_code para o template -->
-{% load static %} <!-- Carrega a tag static para acessar arquivos estáticos -->
-
-<!-- Importa o script da biblioteca Instascan -->
+{% load qr_code %}{% load static %}
+<!-- <script src="{% static 'assets/default/js/jquery-3.6.0.min.js' %}"></script> -->
 <script src="{% static 'assets/instascan.min.js' %}"></script>
-
 <style>
-    /* Estilos CSS para elementos na página */
     #uni_modal .modal-footer {
-        display: none; /* Esconde o rodapé do modal */
+        display: none;
     }
 
     #uni_modal .modal-sub-footer {
-        display: flex; /* Exibe o sub-rodapé do modal como um flex container */
+        display: flex;
     }
 
     #scanner {
-        width: 100%; /* Define a largura do vídeo da câmera como 100% da largura do contêiner */
-        height: 50vh; /* Define a altura do vídeo da câmera como 50% da altura da tela */
-        margin: 0 auto; /* Centraliza o vídeo horizontalmente */
-        position: relative; /* Define o posicionamento do vídeo como relativo */
-        object-fit: cover; /* Redimensiona o vídeo para cobrir todo o contêiner */
-        object-position: center center; /* Centraliza o vídeo dentro do contêiner */
+        width: 100%;
+        height: 50vh;
+        margin: 0 auto;
+        position: relative;
+        object-fit: cover;
+        object-position: center center;
     }
 
     #scanner-focus {
-        /* Estilos para o elemento de foco da câmera */
-        background: #00000085; /* Cor de fundo semi-transparente */
+        background: #00000085;
         -webkit-clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
-        clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%); /* Define a forma do elemento de foco */
-        height: 100%; /* Define a altura como 100% do contêiner */
-        width: 100%; /* Define a largura como 100% do contêiner */
-        top: 0; /* Alinha o topo com o topo do contêiner */
-        left: 0; /* Alinha a esquerda com a esquerda do contêiner */
+        clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
+        height: 100%;
+        width: 100%;
+        top: 0;
+        left: 0;
     }
 </style>
-
 <div class="container-fluid">
-    <!-- Contêiner do visualizador de câmera -->
     <div id="scanner-holder" class="position-relative">
-        <video id="scanner"></video> <!-- Elemento de vídeo para exibir a saída da câmera -->
-        <div id="scanner-focus" class="position-absolute"></div> <!-- Elemento de foco da câmera -->
+        <video id="scanner"></video>
+        <div id="scanner-focus" class="position-absolute"></div>
+    </div>
+    <div class="form-group">
+        <label for="cameraSelect">Selecione a Câmera</label>
+        <select id="cameraSelect" class="form-control">
+            <option value="environment">Traseira</option>
+            <option value="user">Frontal</option>
+        </select>
     </div>
 </div>
-
 <script>
-    // Configurações para o Instascan Scanner
-    const args = {
-        video: document.getElementById('scanner'), // Elemento de vídeo para visualizar a saída da câmera
-        mirror: false // Não espelhar a saída da câmera
-    };
+    const videoElement = document.getElementById('scanner');
+    const cameraSelect = document.getElementById('cameraSelect');
+    let currentStream = null;
 
-    // Substitui a função createObjectURL para definir a fonte do vídeo
-    window.URL.createObjectURL = (stream) => {
-        args.video.srcObject = stream; // Define o stream de mídia como a fonte do vídeo
-        return stream; // Retorna o stream de mídia
-    };
+    function stopCurrentStream() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+    }
 
-    // Cria uma instância do scanner Instascan com as configurações
-    const scanner = new Instascan.Scanner(args);
+    function startScanner(facingMode) {
+        stopCurrentStream();
+        const constraints = {
+            video: {
+                facingMode: facingMode
+            }
+        };
+        navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
+            currentStream = stream;
+            videoElement.srcObject = stream;
+        }).catch(function (e) {
+            console.error(e);
+        });
+    }
 
-    // Adiciona um ouvinte de evento para o evento de varredura
-    scanner.addListener('scan', function(content) {
-        // Ao escanear um código QR, fecha o modal, inicia o loader e exibe os detalhes do funcionário
-        $('.modal').modal('hide'); // Fecha todos os modais abertos
-        start_loader(); // Inicia o loader
+    cameraSelect.addEventListener('change', function () {
+        const facingMode = cameraSelect.value;
+        startScanner(facingMode);
+    });
+
+    const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
+    scanner.addListener('scan', function (content) {
+        $('.modal').modal('hide');
+        start_loader();
         setTimeout(() => {
-            // Após um pequeno atraso, exibe os detalhes do funcionário em um modal
             uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-            scanner.stop(); // Para o scanner após a varredura
+            scanner.stop();
         }, 500);
     });
 
-    // Ouve o evento 'shown.bs.modal' que é acionado quando o modal é exibido
-    $('#uni_modal').on('shown.bs.modal', function() {
+    document.addEventListener('DOMContentLoaded', function () {
+        startScanner('environment'); // Default to back camera
+        Instascan.Camera.getCameras().then(function (cameras) {
+            if (cameras.length > 0) {
+                scanner.start(cameras[0]);
+            } else {
+                console.error('No cameras found.');
+            }
+        }).catch(function (e) {
+            console.error(e);
+        });
+    });
+
+    $('#uni_modal').on('shown.bs.modal', function () {
         if ($('#scanner').length > 0) {
-            scanner.stop(); // Para o scanner se estiver em execução
-            // Obtém uma lista de câmeras disponíveis e inicia o scanner com a câmera traseira se estiver disponível
-            Instascan.Camera.getCameras().then(function(cameras) {
-                let backCamera = cameras.find(camera => camera.name.toLowerCase().includes('back')); // Encontra a câmera traseira
-                if (backCamera) {
-                    scanner.start(backCamera); // Inicia o scanner com a câmera traseira
-                } else {
-                    console.error('No back camera found.'); // Exibe um erro se nenhuma câmera traseira for encontrada
-                }
-            }).catch(function(e) {
-                console.error(e); // Exibe erros ao acessar as câmeras
-            });
+            scanner.stop();
+            startScanner(cameraSelect.value);
         }
     });
 
-    // Ouve o evento 'hide.bs.modal' que é acionado quando o modal é fechado
-    $('#uni_modal').on('hide.bs.modal', function() {
-        scanner.stop(); // Para o scanner ao fechar o modal
+    $('#uni_modal').on('hide.bs.modal', function () {
+        scanner.stop();
+        stopCurrentStream();
     });
 </script>
