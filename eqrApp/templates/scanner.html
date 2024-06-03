@@ -3,17 +3,17 @@
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #uni_modal .modal-footer {
-        display: none
+        display: none;
     }
 
     #uni_modal .modal-sub-footer {
-        display: flex
+        display: flex;
     }
 
     #scanner {
         width: 100%;
         height: 50vh;
-        margin: 0px auto;
+        margin: 0 auto;
         position: relative;
         object-fit: cover;
         object-position: center center;
@@ -32,47 +32,79 @@
 <div class="container-fluid">
     <div id="scanner-holder" class="position-relative">
         <video id="scanner"></video>
-        <div id="scanner-focus" class="position-absolute">
-
-        </div>
+        <div id="scanner-focus" class="position-absolute"></div>
+    </div>
+    <div class="form-group">
+        <label for="cameraSelect">Selecione a Câmera</label>
+        <select id="cameraSelect" class="form-control">
+            <option value="environment">Traseira</option>
+            <option value="user">Frontal</option>
+        </select>
     </div>
 </div>
 <script>
-    const args = {
-        video: document.getElementById('scanner'),
-        mirror: false
-    };
+    const videoElement = document.getElementById('scanner');
+    const cameraSelect = document.getElementById('cameraSelect');
+    let currentStream = null;
 
-    window.URL.createObjectURL = (stream) => {
-        args.video.srcObject = stream;
-        return stream;
-    };
-
-    const scanner = new Instascan.Scanner(args);
-    scanner.addListener('scan', function(content) {
-        // alert(content);
-        $('.modal').modal('hide')
-        start_loader()
-        setTimeout(() => {
-            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md')
-            scanner.stop()
-        }, 500)
-    });
-    $('#uni_modal').on('shown.bs.modal', function() {
-        if ($('#scanner').length > 0) {
-            scanner.stop()
-            Instascan.Camera.getCameras().then(function(cameras) {
-                if (cameras.length > 0) {
-                    scanner.start(cameras[0]);
-                } else {
-                    console.error('No cameras found.');
-                }
-            }).catch(function(e) {
-                console.error(e);
-            });
+    function stopCurrentStream() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
         }
-    })
-    $('#uni_modal').on('hide.bs.modal', function() {
-        scanner.stop()
-    })
+    }
+
+    function startScanner(facingMode) {
+        stopCurrentStream();
+        const constraints = {
+            video: {
+                facingMode: facingMode
+            }
+        };
+        navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
+            currentStream = stream;
+            videoElement.srcObject = stream;
+        }).catch(function (e) {
+            console.error(e);
+        });
+    }
+
+    cameraSelect.addEventListener('change', function () {
+        const facingMode = cameraSelect.value;
+        startScanner(facingMode);
+    });
+
+    const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
+    scanner.addListener('scan', function (content) {
+        $('.modal').modal('hide');
+        start_loader();
+        setTimeout(() => {
+            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
+            scanner.stop();
+        }, 500);
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        startScanner('environment'); // Default to back camera
+        Instascan.Camera.getCameras().then(function (cameras) {
+            if (cameras.length > 0) {
+                scanner.start(cameras[0]);
+            } else {
+                console.error('No cameras found.');
+            }
+        }).catch(function (e) {
+            console.error(e);
+        });
+    });
+
+    $('#uni_modal').on('shown.bs.modal', function () {
+        if ($('#scanner').length > 0) {
+            scanner.stop();
+            startScanner(cameraSelect.value);
+        }
+    });
+
+    $('#uni_modal').on('hide.bs.modal', function () {
+        scanner.stop();
+        stopCurrentStream();
+    });
 </script>
