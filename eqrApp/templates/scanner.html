@@ -116,6 +116,15 @@
                     scanner.start(cameras[0]);
                     // Exibe o seletor de câmera
                     $('#camera-selector').removeClass('d-none');
+
+                    // Evento para mudar a câmera ao selecionar no seletor
+                    cameraSelect.addEventListener('change', function() {
+                        const selectedCameraIndex = parseInt(this.value);
+                        if (!isNaN(selectedCameraIndex)) {
+                            scanner.stop();
+                            scanner.start(cameras[selectedCameraIndex]);
+                        }
+                    });
                 } else {
                     console.error('No cameras found.');
                 }
