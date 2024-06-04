@@ -1,18 +1,19 @@
 {% load qr_code %}{% load static %}
+<!-- <script src="{% static 'assets/default/js/jquery-3.6.0.min.js' %}"></script> -->
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #uni_modal .modal-footer {
-        display: none;
+        display: none
     }
 
     #uni_modal .modal-sub-footer {
-        display: flex;
+        display: flex
     }
 
     #scanner {
         width: 100%;
         height: 50vh;
-        margin: 0 auto;
+        margin: 0px auto;
         position: relative;
         object-fit: cover;
         object-position: center center;
@@ -31,7 +32,9 @@
 <div class="container-fluid">
     <div id="scanner-holder" class="position-relative">
         <video id="scanner"></video>
-        <div id="scanner-focus" class="position-absolute"></div>
+        <div id="scanner-focus" class="position-absolute">
+
+        </div>
     </div>
 </div>
 <script>
@@ -47,34 +50,20 @@
 
     const scanner = new Instascan.Scanner(args);
     scanner.addListener('scan', function(content) {
-        $('.modal').modal('hide');
-        start_loader();
+        // alert(content);
+        $('.modal').modal('hide')
+        start_loader()
         setTimeout(() => {
-            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-            scanner.stop();
-        }, 500);
+            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md')
+            scanner.stop()
+        }, 500)
     });
-
     $('#uni_modal').on('shown.bs.modal', function() {
         if ($('#scanner').length > 0) {
-            scanner.stop();
+            scanner.stop()
             Instascan.Camera.getCameras().then(function(cameras) {
                 if (cameras.length > 0) {
-                    // Procurar por uma câmera traseira
-                    let selectedCam = null;
-                    cameras.forEach(function(camera) {
-                        if (camera.name.toLowerCase().indexOf('back') !== -1) {
-                            selectedCam = camera;
-                            return false; // Encerra o loop
-                        }
-                    });
-
-                    if (selectedCam) {
-                        // Se uma câmera traseira for encontrada, comece a digitalização
-                        scanner.start(selectedCam);
-                    } else {
-                        console.error('No back camera found.');
-                    }
+                    scanner.start(cameras[1]);
                 } else {
                     console.error('No cameras found.');
                 }
@@ -82,9 +71,8 @@
                 console.error(e);
             });
         }
-    });
-
+    })
     $('#uni_modal').on('hide.bs.modal', function() {
-        scanner.stop();
-    });
+        scanner.stop()
+    })
 </script>
