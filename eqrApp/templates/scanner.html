@@ -1,19 +1,18 @@
 {% load qr_code %}{% load static %}
-<!-- <script src="{% static 'assets/default/js/jquery-3.6.0.min.js' %}"></script> -->
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #uni_modal .modal-footer {
-        display: none
+        display: none;
     }
 
     #uni_modal .modal-sub-footer {
-        display: flex
+        display: flex;
     }
 
     #scanner {
         width: 100%;
         height: 50vh;
-        margin: 0px auto;
+        margin: 0 auto;
         position: relative;
         object-fit: cover;
         object-position: center center;
@@ -32,47 +31,39 @@
 <div class="container-fluid">
     <div id="scanner-holder" class="position-relative">
         <video id="scanner"></video>
-        <div id="scanner-focus" class="position-absolute">
-
-        </div>
+        <div id="scanner-focus" class="position-absolute"></div>
     </div>
 </div>
 <script>
-    const args = {
-        video: document.getElementById('scanner'),
-        mirror: false
-    };
+    const videoElement = document.getElementById('scanner');
+    const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
 
-    window.URL.createObjectURL = (stream) => {
-        args.video.srcObject = stream;
-        return stream;
-    };
+    // Função para verificar se uma câmera é traseira
+    function isBackCamera(camera) {
+        return camera.name.toLowerCase().includes('back');
+    }
 
-    const scanner = new Instascan.Scanner(args);
-    scanner.addListener('scan', function(content) {
-        // alert(content);
-        $('.modal').modal('hide')
-        start_loader()
-        setTimeout(() => {
-            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md')
-            scanner.stop()
-        }, 500)
-    });
-    $('#uni_modal').on('shown.bs.modal', function() {
-        if ($('#scanner').length > 0) {
-            scanner.stop()
-            Instascan.Camera.getCameras().then(function(cameras) {
-                if (cameras.length > 0) {
-                    scanner.start(cameras[0]);
-                } else {
-                    console.error('No cameras found.');
-                }
-            }).catch(function(e) {
-                console.error(e);
-            });
+    // Inicialização do scanner Instascan
+    Instascan.Camera.getCameras().then(function(cameras) {
+        console.log('All cameras:', cameras);
+        // Filtrar apenas as câmeras traseiras
+        const backCameras = cameras.filter(isBackCamera);
+        console.log('Back cameras:', backCameras);
+
+        if (backCameras.length > 0) {
+            // Selecionar a primeira câmera traseira disponível
+            const selectedCamera = backCameras[0];
+            console.log('Selected camera:', selectedCamera);
+            scanner.start(selectedCamera);
+        } else {
+            console.error('No back cameras found.');
         }
-    })
+    }).catch(function(error) {
+        console.error('Error getting cameras:', error);
+    });
+
+    // Evento para parar o scanner ao fechar o modal
     $('#uni_modal').on('hide.bs.modal', function() {
-        scanner.stop()
-    })
+        scanner.stop();
+    });
 </script>
