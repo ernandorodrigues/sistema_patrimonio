@@ -3,17 +3,17 @@
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #uni_modal .modal-footer {
-        display: none;
+        display: none
     }
 
     #uni_modal .modal-sub-footer {
-        display: flex;
+        display: flex
     }
 
     #scanner {
         width: 100%;
         height: 50vh;
-        margin: 0 auto;
+        margin: 0px auto;
         position: relative;
         object-fit: cover;
         object-position: center center;
@@ -28,59 +28,66 @@
         top: 0;
         left: 0;
     }
+
+    /* Estilo para o aviso */
+    #qr-detected-alert {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 999;
+        display: none; /* Inicia escondido */
+    }
 </style>
+
+<!-- Div para exibir o aviso -->
+<div id="qr-detected-alert" class="alert alert-success" style="display: none;">
+    QR Code Detected!
+</div>
+
 <div class="container-fluid">
     <div id="scanner-holder" class="position-relative">
         <video id="scanner"></video>
         <div id="scanner-focus" class="position-absolute"></div>
     </div>
 </div>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const videoElement = document.getElementById('scanner');
-        const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
+    const args = {
+        video: document.getElementById('scanner'),
+        mirror: false
+    };
 
-        // Configura o listener para quando um código QR é escaneado
-        scanner.addListener('scan', function(content) {
-            // alert(content);
-            $('.modal').modal('hide');
-            start_loader();
-            setTimeout(function() {
-                uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-                scanner.stop();
-            }, 500);
-        });
+    window.URL.createObjectURL = (stream) => {
+        args.video.srcObject = stream;
+        return stream;
+    };
 
-        $('#uni_modal').on('shown.bs.modal', function() {
-            if ($('#scanner').length > 0) {
-                scanner.stop();
-                startScanner();
-            }
-        });
+    const scanner = new Instascan.Scanner(args);
 
-        $('#uni_modal').on('hide.bs.modal', function() {
+    scanner.addListener('scan', function(content) {
+        // Mostrar o aviso quando um código QR for identificado
+        $('#qr-detected-alert').show();
+
+        // Esconder o aviso após alguns segundos (opcional)
+        setTimeout(function() {
+            $('#qr-detected-alert').hide();
+        }, 3000); // Esconder após 3 segundos (3000 milissegundos)
+
+        $('.modal').modal('hide');
+        start_loader();
+        setTimeout(() => {
+            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
             scanner.stop();
-        });
+        }, 500);
+    });
 
-        function startScanner() {
+    $('#uni_modal').on('shown.bs.modal', function() {
+        if ($('#scanner').length > 0) {
+            scanner.stop();
             Instascan.Camera.getCameras().then(function(cameras) {
-                let selectedCamera;
-                // Verifica se há uma câmera traseira disponível
                 if (cameras.length > 0) {
-                    for (let i = 0; i < cameras.length; i++) {
-                        if (cameras[i].name.toLowerCase().includes('back')) {
-                            selectedCamera = cameras[i];
-                            break;
-                        }
-                    }
-                }
-                // Se não houver câmera traseira, usa a primeira câmera disponível
-                if (!selectedCamera && cameras.length > 0) {
-                    selectedCamera = cameras[0];
-                }
-                // Inicia o scanner com a câmera selecionada
-                if (selectedCamera) {
-                    scanner.start(selectedCamera);
+                    scanner.start(cameras[0]);
                 } else {
                     console.error('No cameras found.');
                 }
@@ -88,5 +95,9 @@
                 console.error(e);
             });
         }
+    });
+
+    $('#uni_modal').on('hide.bs.modal', function() {
+        scanner.stop();
     });
 </script>
