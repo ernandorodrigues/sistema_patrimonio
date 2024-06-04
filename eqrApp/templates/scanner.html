@@ -1,6 +1,5 @@
-{% load qr_code %}
-{% load static %}
-
+{% load qr_code %}{% load static %}
+<!-- <script src="{% static 'assets/default/js/jquery-3.6.0.min.js' %}"></script> -->
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #uni_modal .modal-footer {
@@ -29,81 +28,65 @@
         top: 0;
         left: 0;
     }
-
-    #qr-detected {
-        position: fixed;
-        top: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: rgba(0, 0, 0, 0.5);
-        color: #fff;
-        padding: 10px 20px;
-        border-radius: 5px;
-        display: none;
-    }
-
-    #action-button {
-        position: fixed;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: #007bff;
-        color: #fff;
-        padding: 10px 20px;
-        border-radius: 5px;
-        cursor: pointer;
-    }
 </style>
-
-<div id="qr-detected">QR Code Detectado!</div>
 <div class="container-fluid">
     <div id="scanner-holder" class="position-relative">
         <video id="scanner"></video>
         <div id="scanner-focus" class="position-absolute"></div>
     </div>
 </div>
-<div id="action-button">Iniciar Leitura</div>
-
 <script>
-    const scanner = new Instascan.Scanner({ video: document.getElementById('scanner'), mirror: false });
-    let qrDetectedTimeout;
-
-    scanner.addListener('scan', function(content) {
-        $('#qr-detected').fadeIn();
-        clearTimeout(qrDetectedTimeout);
-        qrDetectedTimeout = setTimeout(function() {
-            $('#qr-detected').fadeOut();
-        }, 2000);
-
-        $('.modal').modal('hide');
-        start_loader();
-        setTimeout(() => {
-            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-            scanner.stop();
-        }, 500);
-    });
-
-    $('#action-button').click(function() {
-        startScanner();
-    });
-
-    function startScanner() {
-        Instascan.Camera.getCameras().then(function(cameras) {
-            if (cameras.length > 0) {
-                scanner.start(cameras[0]);
-            } else {
-                console.error('No cameras found.');
-            }
-        }).catch(function(e) {
-            console.error(e);
-        });
-    }
-
     document.addEventListener('DOMContentLoaded', function() {
-        startScanner();
-    });
+        const videoElement = document.getElementById('scanner');
+        const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
 
-    $('#uni_modal').on('hide.bs.modal', function() {
-        scanner.stop();
+        // Configura o listener para quando um código QR é escaneado
+        scanner.addListener('scan', function(content) {
+            // alert(content);
+            $('.modal').modal('hide');
+            start_loader();
+            setTimeout(function() {
+                uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
+                scanner.stop();
+            }, 500);
+        });
+
+        $('#uni_modal').on('shown.bs.modal', function() {
+            if ($('#scanner').length > 0) {
+                scanner.stop();
+                startScanner();
+            }
+        });
+
+        $('#uni_modal').on('hide.bs.modal', function() {
+            scanner.stop();
+        });
+
+        function startScanner() {
+            Instascan.Camera.getCameras().then(function(cameras) {
+                let selectedCamera;
+                // Verifica se há uma câmera traseira disponível
+                if (cameras.length > 0) {
+                    for (let i = 0; i < cameras.length; i++) {
+                        if (cameras[i].name.toLowerCase().includes('back')) {
+                            selectedCamera = cameras[i];
+                            break;
+                        }
+                    }
+                }
+                // Se não houver câmera traseira, usa a primeira câmera disponível
+                if (!selectedCamera && cameras.length > 0) {
+                    selectedCamera = cameras[0];
+                }
+                // Inicia o scanner com a câmera selecionada
+                if (selectedCamera) {
+                    scanner.start(selectedCamera);
+                } else {
+                    console.error('No cameras found.');
+                }
+            }).catch(function(e) {
+                console.error(e);
+            });
+        }
     });
 </script>
