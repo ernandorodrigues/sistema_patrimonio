@@ -1,14 +1,13 @@
-{% load qr_code %}
-{% load static %}
+{% load qr_code %}{% load static %}
 <!-- <script src="{% static 'assets/default/js/jquery-3.6.0.min.js' %}"></script> -->
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #uni_modal .modal-footer {
-        display: none
+        display: none;
     }
 
     #uni_modal .modal-sub-footer {
-        display: flex
+        display: flex;
     }
 
     #scanner {
@@ -30,45 +29,26 @@
         left: 0;
     }
 
-    /* Estilo para o aviso */
     #qr-detected-alert {
-        position: fixed;
-        top: 20px;
+        position: absolute;
+        top: 10px;
         left: 50%;
         transform: translateX(-50%);
-        z-index: 999;
-        display: none; /* Inicia escondido */
-    }
-
-    /* Estilo para o seletor de câmera */
-    #camera-selector {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        z-index: 999;
+        background-color: green;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        display: none;
+        z-index: 1000;
     }
 </style>
-
-<!-- Div para exibir o aviso -->
-<div id="qr-detected-alert" class="alert alert-success" style="display: none;">
-    QR Code Detected!
-</div>
-
-<!-- Div para exibir o seletor de câmera -->
-<div id="camera-selector" class="d-none">
-    <label for="camera-select">Select Camera: </label>
-    <select id="camera-select">
-        <!-- Options will be dynamically added here -->
-    </select>
-</div>
-
 <div class="container-fluid">
     <div id="scanner-holder" class="position-relative">
         <video id="scanner"></video>
         <div id="scanner-focus" class="position-absolute"></div>
+        <div id="qr-detected-alert">QR Code Detected!</div>
     </div>
 </div>
-
 <script>
     const args = {
         video: document.getElementById('scanner'),
@@ -104,27 +84,25 @@
             scanner.stop();
             Instascan.Camera.getCameras().then(function(cameras) {
                 if (cameras.length > 0) {
-                    // Adiciona as opções do seletor de câmera
-                    const cameraSelect = document.getElementById('camera-select');
-                    cameras.forEach((camera, index) => {
-                        const option = document.createElement('option');
-                        option.value = index;
-                        option.textContent = camera.name;
-                        cameraSelect.appendChild(option);
-                    });
-                    // Inicia a câmera traseira por padrão
-                    scanner.start(cameras[0]);
-                    // Exibe o seletor de câmera
-                    $('#camera-selector').removeClass('d-none');
+                    let selectedCamera = null;
 
-                    // Evento para mudar a câmera ao selecionar no seletor
-                    cameraSelect.addEventListener('change', function() {
-                        const selectedCameraIndex = parseInt(this.value);
-                        if (!isNaN(selectedCameraIndex)) {
-                            scanner.stop();
-                            scanner.start(cameras[selectedCameraIndex]);
+                    // Procurar pela câmera traseira
+                    for (let c = 0; c < cameras.length; c++) {
+                        if (cameras[c].name.toLowerCase().indexOf('back') !== -1) {
+                            selectedCamera = cameras[c];
+                            break;
                         }
-                    });
+                    }
+
+                    // Se não encontrar a câmera traseira, usar a primeira disponível
+                    if (!selectedCamera) selectedCamera = cameras[0];
+
+                    // Iniciar o scanner com a câmera selecionada
+                    if (selectedCamera) {
+                        scanner.start(selectedCamera);
+                    } else {
+                        console.error("No cameras found.");
+                    }
                 } else {
                     console.error('No cameras found.');
                 }
