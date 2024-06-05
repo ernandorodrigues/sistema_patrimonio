@@ -70,26 +70,28 @@
             }, 500);
         });
 
-        function startCamera(selectedCam) {
+        function startCamera(selectedCamName) {
             Instascan.Camera.getCameras().then(function(cameras) {
                 if (cameras.length > 0) {
-                    var camera = cameras.find(cam => cam.name.toLowerCase().includes(selectedCam));
-                    if (!camera) camera = cameras[0]; // Default to first camera if specific one not found
-                    scanner.start(camera);
+                    console.log('Cameras found:', cameras);
+                    var selectedCamera = cameras.find(cam => cam.name.toLowerCase().includes(selectedCamName));
+                    if (!selectedCamera) selectedCamera = cameras[0]; // Default to first camera if specific one not found
+                    console.log('Selected camera:', selectedCamera);
+                    scanner.start(selectedCamera);
                 } else {
                     console.error('No cameras found.');
                     alert('No cameras found.');
                 }
             }).catch(function(e) {
-                console.error(e);
+                console.error('Error getting cameras:', e);
                 alert(e);
             });
         }
 
         startCamera('back');
         $('[name="options"]').on('change', function() {
-            var selectedCam = $(this).val() == 1 ? 'front' : 'back';
-            scanner.stop().then(() => startCamera(selectedCam));
+            var selectedCamName = $(this).val() == 1 ? 'front' : 'back';
+            scanner.stop().then(() => startCamera(selectedCamName));
         });
 
         $('#uni_modal').on('hide.bs.modal', function() {
