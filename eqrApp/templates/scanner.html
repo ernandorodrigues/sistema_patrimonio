@@ -64,38 +64,32 @@
         }, 500);
     });
 
-    $('#uni_modal').on('shown.bs.modal', function() {
-        if ($('#scanner').length > 0) {
-            scanner.stop();
-            Instascan.Camera.getCameras().then(function(cameras) {
-                if (cameras.length > 0) {
-                    // Inicialmente, inicie com a câmera frontal
-                    scanner.start(cameras[0]);
-                    $('[name="options"]').on('change', function() {
-                        if ($(this).val() == 1) {
-                            if (cameras[0] != "") {
-                                scanner.start(cameras[0]); // Seleciona a câmera frontal
-                            } else {
-                                alert('No Front camera found!');
-                            }
-                        } else if ($(this).val() == 2) {
-                            if (cameras[1] != "") {
-                                scanner.start(cameras[1]); // Seleciona a câmera traseira
-                            } else {
-                                alert('No Back camera found!');
-                            }
-                        }
-                    });
-                } else {
-                    console.error('No cameras found.');
-                }
-            }).catch(function(e) {
-                console.error(e);
-            });
-        }
+    function startCamera(selectedCam) {
+        Instascan.Camera.getCameras().then(function(cameras) {
+            if (cameras.length > 0) {
+                var camera = cameras.find(cam => cam.name.toLowerCase().includes(selectedCam));
+                if (!camera) camera = cameras[0]; // Default to first camera if specific one not found
+                scanner.start(camera);
+            } else {
+                console.error('No cameras found.');
+                alert('No cameras found.');
+            }
+        }).catch(function(e) {
+            console.error(e);
+            alert(e);
+        });
+    }
+
+    $(document).ready(function() {
+        startCamera('back');
+        $('[name="options"]').on('change', function() {
+            var selectedCam = $(this).val() == 1 ? 'front' : 'back';
+            scanner.stop().then(() => startCamera(selectedCam));
+        });
     });
 
     $('#uni_modal').on('hide.bs.modal', function() {
         scanner.stop();
     });
 </script>
+
