@@ -3,11 +3,11 @@
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #uni_modal .modal-footer {
-        display: none
+        display: none;
     }
 
     #uni_modal .modal-sub-footer {
-        display: flex
+        display: flex;
     }
 
     #scanner {
@@ -44,52 +44,56 @@
     </div>
 </div>
 <script>
-    const args = {
-        video: document.getElementById('scanner'),
-        mirror: false
-    };
+    document.addEventListener("DOMContentLoaded", function() {
+        const args = {
+            video: document.getElementById('scanner'),
+            mirror: false
+        };
 
-    window.URL.createObjectURL = (stream) => {
-        args.video.srcObject = stream;
-        return stream;
-    };
+        if (!args.video) {
+            console.error('Video element not found');
+            return;
+        }
 
-    const scanner = new Instascan.Scanner(args);
-    scanner.addListener('scan', function(content) {
-        $('.modal').modal('hide');
-        start_loader();
-        setTimeout(() => {
-            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-            scanner.stop();
-        }, 500);
-    });
+        window.URL.createObjectURL = (stream) => {
+            args.video.srcObject = stream;
+            return stream;
+        };
 
-    function startCamera(selectedCam) {
-        Instascan.Camera.getCameras().then(function(cameras) {
-            if (cameras.length > 0) {
-                var camera = cameras.find(cam => cam.name.toLowerCase().includes(selectedCam));
-                if (!camera) camera = cameras[0]; // Default to first camera if specific one not found
-                scanner.start(camera);
-            } else {
-                console.error('No cameras found.');
-                alert('No cameras found.');
-            }
-        }).catch(function(e) {
-            console.error(e);
-            alert(e);
+        const scanner = new Instascan.Scanner(args);
+        scanner.addListener('scan', function(content) {
+            $('.modal').modal('hide');
+            start_loader();
+            setTimeout(() => {
+                uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
+                scanner.stop();
+            }, 500);
         });
-    }
 
-    $(document).ready(function() {
+        function startCamera(selectedCam) {
+            Instascan.Camera.getCameras().then(function(cameras) {
+                if (cameras.length > 0) {
+                    var camera = cameras.find(cam => cam.name.toLowerCase().includes(selectedCam));
+                    if (!camera) camera = cameras[0]; // Default to first camera if specific one not found
+                    scanner.start(camera);
+                } else {
+                    console.error('No cameras found.');
+                    alert('No cameras found.');
+                }
+            }).catch(function(e) {
+                console.error(e);
+                alert(e);
+            });
+        }
+
         startCamera('back');
         $('[name="options"]').on('change', function() {
             var selectedCam = $(this).val() == 1 ? 'front' : 'back';
             scanner.stop().then(() => startCamera(selectedCam));
         });
-    });
 
-    $('#uni_modal').on('hide.bs.modal', function() {
-        scanner.stop();
+        $('#uni_modal').on('hide.bs.modal', function() {
+            scanner.stop();
+        });
     });
 </script>
-
