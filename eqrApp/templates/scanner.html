@@ -46,6 +46,7 @@
     const videoElement = document.getElementById('scanner');
     const cameraSelect = document.getElementById('cameraSelect');
     let currentStream = null;
+    let scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
 
     function stopCurrentStream() {
         if (currentStream) {
@@ -63,6 +64,7 @@
         navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
             currentStream = stream;
             videoElement.srcObject = stream;
+            scanner.start(); // Inicia o scanner após definir o stream
         }).catch(function (e) {
             console.error('Error accessing camera: ', e);
             alert('Não foi possível acessar a câmera.');
@@ -74,7 +76,6 @@
         startScanner(facingMode);
     });
 
-    const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
     scanner.addListener('scan', function (content) {
         $('.modal').modal('hide');
         start_loader();
@@ -88,7 +89,9 @@
         startScanner('environment'); // Default to back camera
         Instascan.Camera.getCameras().then(function (cameras) {
             if (cameras.length > 0) {
-                scanner.start(cameras[0]);
+                // Seleciona a câmera correta com base na seleção do usuário
+                const facingMode = cameraSelect.value === 'user' ? 'user' : 'environment';
+                startScanner(facingMode);
             } else {
                 console.error('No cameras found.');
             }
@@ -100,7 +103,8 @@
     $('#uni_modal').on('shown.bs.modal', function () {
         if ($('#scanner').length > 0) {
             scanner.stop();
-            startScanner(cameraSelect.value);
+            const facingMode = cameraSelect.value;
+            startScanner(facingMode);
         }
     });
 
