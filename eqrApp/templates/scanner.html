@@ -43,7 +43,7 @@
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div id="scanner-holder">
-                    <video id="scanner"></video>
+                    <video id="scanner" playsinline></video>
                     <div id="scanner-focus"></div>
                 </div>
             </div>
@@ -65,30 +65,21 @@
     </div>
 
     <script>
-        const args = {
-            video: document.getElementById('scanner'),
-            mirror: false
-        };
+        const videoElement = document.getElementById('scanner');
+        const scanner = new Instascan.Scanner({ video: videoElement });
 
-        window.URL.createObjectURL = (stream) => {
-            args.video.srcObject = stream;
-            return stream;
-        };
-
-        const scanner = new Instascan.Scanner(args);
-
-        navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: 'environment'
+        Instascan.Camera.getCameras().then(function (cameras) {
+            if (cameras.length > 0) {
+                const camera = cameras[0];
+                scanner.start(camera);
+            } else {
+                console.error('No cameras found.');
             }
-        }).then(function(stream) {
-            args.video.srcObject = stream;
-            scanner.start(args.video.srcObject);
-        }).catch(function(err) {
-            console.error('Erro ao acessar a câmera:', err);
+        }).catch(function (e) {
+            console.error(e);
         });
 
-        scanner.addListener('scan', function(content) {
+        scanner.addListener('scan', function (content) {
             $('#qrContent').text(content);
             $('#qrModal').modal('show');
         });
