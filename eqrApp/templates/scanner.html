@@ -1,8 +1,6 @@
 {% load qr_code %}
 {% load static %}
-
 <script src="{% static 'assets/instascan.min.js' %}"></script>
-
 <style>
     #uni_modal .modal-footer {
         display: none;
@@ -31,43 +29,59 @@
         left: 0;
     }
 </style>
-
 <div class="container-fluid">
     <div id="scanner-holder" class="position-relative">
         <video id="scanner"></video>
         <div id="scanner-focus" class="position-absolute"></div>
     </div>
 </div>
-
 <script>
     const videoElement = document.getElementById('scanner');
-    let scanner = null;
+    const scannerArgs = {
+        video: videoElement,
+        mirror: false
+    };
+    let scanner = new Instascan.Scanner(scannerArgs);
 
-    document.addEventListener('DOMContentLoaded', function () {
-        scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
-        scanner.addListener('scan', function (content) {
-            $('.modal').modal('hide');
-            start_loader();
-            setTimeout(() => {
-                uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-                scanner.stop();
-            }, 500);
-        });
-
+    // Função para iniciar o scanner com a câmera traseira
+    function startScannerWithBackCamera() {
         Instascan.Camera.getCameras().then(function (cameras) {
-            if (cameras.length > 0) {
-                scanner.start(cameras[0]);
+            const backCamera = cameras.find(camera => camera.name.includes('back'));
+            if (backCamera) {
+                scanner.start(backCamera);
             } else {
-                console.error('No cameras found.');
+                console.error('No back camera found.');
             }
         }).catch(function (e) {
             console.error(e);
         });
+    }
+
+    // Iniciar o scanner com a câmera traseira quando a página carregar
+    document.addEventListener('DOMContentLoaded', function () {
+        startScannerWithBackCamera();
     });
 
-    $('#uni_modal').on('hide.bs.modal', function () {
-        if (scanner) {
+    // Manipular a exibição do modal
+    $('#uni_modal').on('shown.bs.modal', function () {
+        if ($('#scanner').length > 0) {
             scanner.stop();
+            startScannerWithBackCamera();
         }
+    });
+
+    // Parar o scanner ao fechar o modal
+    $('#uni_modal').on('hide.bs.modal', function () {
+        scanner.stop();
+    });
+
+    // Adicionar listener para scan
+    scanner.addListener('scan', function (content) {
+        $('.modal').modal('hide');
+        start_loader();
+        setTimeout(() => {
+            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
+            scanner.stop();
+        }, 500);
     });
 </script>
