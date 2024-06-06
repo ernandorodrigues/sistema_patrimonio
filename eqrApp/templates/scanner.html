@@ -38,8 +38,7 @@
 <script>
     const args = {
         video: document.getElementById('scanner'),
-        mirror: false,
-        facingMode: { exact: 'environment' } // Define a câmera traseira como padrão
+        mirror: false
     };
 
     const scanner = new Instascan.Scanner(args);
@@ -56,20 +55,24 @@
     $('#uni_modal').on('shown.bs.modal', function() {
         if ($('#scanner').length > 0) {
             scanner.stop();
-            Instascan.Camera.getCameras().then(function(cameras) {
-                if (cameras.length > 0) {
-                    // Procura pela câmera traseira
-                    const rearCamera = cameras.find(camera => camera.name.toLowerCase().includes('rear'));
-                    if (rearCamera) {
-                        scanner.start(rearCamera);
-                    } else {
-                        console.error('Câmera traseira não encontrada.');
-                    }
+            navigator.mediaDevices.enumerateDevices()
+            .then(devices => {
+                const rearCamera = devices.find(device => device.kind === 'videoinput' && device.label.toLowerCase().includes('back'));
+                if (rearCamera) {
+                    const constraints = {
+                        video: { deviceId: { exact: rearCamera.deviceId } }
+                    };
+                    return navigator.mediaDevices.getUserMedia(constraints);
                 } else {
-                    console.error('Nenhuma câmera encontrada.');
+                    throw new Error('Câmera traseira não encontrada.');
                 }
-            }).catch(function(e) {
-                console.error('Erro ao acessar as câmeras:', e);
+            })
+            .then(stream => {
+                args.video.srcObject = stream;
+                scanner.start(args.video.srcObject);
+            })
+            .catch(error => {
+                console.error('Erro ao acessar a câmera:', error);
             });
         }
     });
