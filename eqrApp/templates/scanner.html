@@ -1,6 +1,14 @@
 {% load qr_code %}{% load static %}
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
+    #uni_modal .modal-footer {
+        display: none;
+    }
+
+    #uni_modal .modal-sub-footer {
+        display: flex;
+    }
+
     #scanner {
         width: 100%;
         height: 50vh;
@@ -9,6 +17,7 @@
         object-fit: cover;
         object-position: center center;
     }
+
     #scanner-focus {
         background: #00000085;
         -webkit-clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
@@ -24,83 +33,57 @@
         <video id="scanner"></video>
         <div id="scanner-focus" class="position-absolute"></div>
     </div>
-    <div class="form-group">
-        <label for="cameraSelect">Selecione a Câmera</label>
-        <select id="cameraSelect" class="form-control">
-            <option value="environment">Traseira</option>
-            <option value="user">Frontal</option>
-        </select>
-    </div>
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        console.log("DOMContentLoaded event fired");
-
         const videoElement = document.getElementById('scanner');
-        const cameraSelect = document.getElementById('cameraSelect');
-        let currentStream = null;
-
-        function stopCurrentStream() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-            }
-        }
+        let scanner = null;
 
         function startScanner(facingMode) {
-            stopCurrentStream();
             const constraints = {
                 video: {
                     facingMode: facingMode
                 }
             };
             navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
-                currentStream = stream;
                 videoElement.srcObject = stream;
+
+                if (scanner) {
+                    scanner.stop();
+                }
+                scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
+                scanner.addListener('scan', function (content) {
+                    $('.modal').modal('hide');
+                    start_loader();
+                    setTimeout(() => {
+                        uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
+                        scanner.stop();
+                    }, 500);
+                });
+                scanner.start();
             }).catch(function (e) {
                 console.error('Error accessing camera: ', e);
                 alert('Não foi possível acessar a câmera.');
             });
         }
 
-        cameraSelect.addEventListener('change', function () {
-            const facingMode = cameraSelect.value;
-            startScanner(facingMode);
-        });
-
-        const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
-        scanner.addListener('scan', function (content) {
-            console.log('QR code content:', content);
-            $('.modal').modal('hide');
-            start_loader();
-            setTimeout(() => {
-                uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-                scanner.stop();
-            }, 500);
-        });
-
-        Instascan.Camera.getCameras().then(function (cameras) {
-            if (cameras.length > 0) {
-                console.log("Cameras found: ", cameras);
-                const facingMode = cameraSelect.value === 'user' ? 'user' : 'environment';
-                startScanner(facingMode);
-            } else {
-                console.error('No cameras found.');
-            }
-        }).catch(function (e) {
-            console.error('Error getting cameras: ', e);
+        document.addEventListener('DOMContentLoaded', function () {
+            startScanner('user'); // Use facingMode 'user' for front camera
         });
 
         $('#uni_modal').on('shown.bs.modal', function () {
             if ($('#scanner').length > 0) {
-                scanner.stop();
-                const facingMode = cameraSelect.value;
-                startScanner(facingMode);
+                if (scanner) {
+                    scanner.stop();
+                }
+                startScanner('user'); // Use facingMode 'user' for front camera
             }
         });
 
         $('#uni_modal').on('hide.bs.modal', function () {
-            scanner.stop();
-            stopCurrentStream();
+            if (scanner) {
+                scanner.stop();
+            }
         });
     });
 </script>
