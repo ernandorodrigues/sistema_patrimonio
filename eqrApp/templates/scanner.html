@@ -1,87 +1,125 @@
-{% load qr_code %}
-{% load static %}
-<script src="{% static 'assets/instascan.min.js' %}"></script>
-<style>
-    #uni_modal .modal-footer {
-        display: none;
-    }
+{% load qr_code %}{% load static %}
+<!DOCTYPE html>
+<html lang="en">
 
-    #uni_modal .modal-sub-footer {
-        display: flex;
-    }
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner de QR Code</title>
+    <link rel="stylesheet" href="{% static 'assets/bootstrap/css/bootstrap.min.css' %}">
+    <script src="{% static 'assets/default/js/jquery-3.6.0.min.js' %}"></script>
+    <script src="{% static 'assets/bootstrap/js/bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/instascan.min.js' %}"></script>
+    <style>
+        #scanner {
+            width: 100%;
+            height: 70vh;
+            margin: 20px auto;
+            position: relative;
+            object-fit: cover;
+            object-position: center center;
+        }
 
-    #scanner {
-        width: 100%;
-        height: 50vh;
-        margin: 0 auto;
-        position: relative;
-        object-fit: cover;
-        object-position: center center;
-    }
+        #scanner-focus {
+            background: #00000085;
+            -webkit-clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
+            clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
+            height: 100%;
+            width: 100%;
+            top: 0;
+            left: 0;
+        }
 
-    #scanner-focus {
-        background: #00000085;
-        -webkit-clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
-        clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
-        height: 100%;
-        width: 100%;
-        top: 0;
-        left: 0;
-    }
-</style>
-<div class="container-fluid">
-    <div id="scanner-holder" class="position-relative">
-        <video id="scanner"></video>
-        <div id="scanner-focus" class="position-absolute"></div>
+        .modal-content {
+            background-color: #f8f9fa;
+            border-radius: 0;
+            box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div id="scanner-holder">
+                    <video id="scanner"></video>
+                    <div id="scanner-focus"></div>
+                </div>
+                <div class="form-group mt-3">
+                    <label for="cameraSelect">Selecione a Câmera</label>
+                    <select id="cameraSelect" class="form-control">
+                    </select>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
-<script>
-    const videoElement = document.getElementById('scanner');
-    const scannerArgs = {
-        video: videoElement,
-        mirror: false
-    };
-    let scanner = new Instascan.Scanner(scannerArgs);
 
-    // Função para iniciar o scanner com a câmera traseira
-    function startScannerWithBackCamera() {
+    <div id="qrModal" class="modal fade" tabindex="-1" aria-labelledby="qrModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="qrModalLabel">QR Code Escaneado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="qrContent"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const args = {
+            video: document.getElementById('scanner'),
+            mirror: false
+        };
+
+        window.URL.createObjectURL = (stream) => {
+            args.video.srcObject = stream;
+            return stream;
+        };
+
+        const scanner = new Instascan.Scanner(args);
+
         Instascan.Camera.getCameras().then(function (cameras) {
-            const backCamera = cameras.find(camera => camera.name.includes('back'));
-            if (backCamera) {
-                scanner.start(backCamera);
+            const cameraSelect = document.getElementById('cameraSelect');
+            cameras.forEach(function (camera, index) {
+                const option = document.createElement('option');
+                option.value = index;
+                option.text = camera.name || `Câmera ${index + 1}`;
+                cameraSelect.appendChild(option);
+            });
+
+            if (cameras.length > 0) {
+                scanner.start(cameras[0]);
             } else {
-                console.error('No back camera found.');
+                console.error('Nenhuma câmera encontrada.');
             }
         }).catch(function (e) {
             console.error(e);
         });
-    }
 
-    // Iniciar o scanner com a câmera traseira quando a página carregar
-    document.addEventListener('DOMContentLoaded', function () {
-        startScannerWithBackCamera();
-    });
+        scanner.addListener('scan', function (content) {
+            $('#qrContent').text(content);
+            $('#qrModal').modal('show');
+        });
 
-    // Manipular a exibição do modal
-    $('#uni_modal').on('shown.bs.modal', function () {
-        if ($('#scanner').length > 0) {
-            scanner.stop();
-            startScannerWithBackCamera();
-        }
-    });
+        $('#cameraSelect').on('change', function () {
+            const selectedCameraIndex = this.value;
+            Instascan.Camera.getCameras().then(function (cameras) {
+                if (cameras.length > selectedCameraIndex) {
+                    scanner.stop();
+                    scanner.start(cameras[selectedCameraIndex]);
+                } else {
+                    console.error('Câmera selecionada inválida.');
+                }
+            }).catch(function (e) {
+                console.error(e);
+            });
+        });
+    </script>
+</body>
 
-    // Parar o scanner ao fechar o modal
-    $('#uni_modal').on('hide.bs.modal', function () {
-        scanner.stop();
-    });
-
-    // Adicionar listener para scan
-    scanner.addListener('scan', function (content) {
-        $('.modal').modal('hide');
-        start_loader();
-        setTimeout(() => {
-            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-            scanner.stop();
-        }, 500);
-    });
-</script>
+</html>

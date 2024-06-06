@@ -1,13 +1,16 @@
-{% extends "base.html" %} {% load humanize %} {% load customfilter %} {% block pageContent %}
+{% extends "base.html" %}
+{% load humanize %}
+{% load customfilter %}
 
+{% block pageContent %}
 <!--Section: Content-->
 <section class="">
     <div class="row justify-content-center">
         <div class="col-lg-5 col-md-8 col-sm-12 col-xs-12 card card-default rounded-0 shadow border border-dark">
             <div class="card-body">
                 <div class="container-fluid">
-                    <h1 class="text-center">{{employees|intcomma}}</h2>
-                        <h3 class="text-center"><b>Total de Patrimônios</b></h3>
+                    <h1 class="text-center">{{ employees|intcomma }}</h1>
+                    <h3 class="text-center"><b>Total de Patrimônios</b></h3>
                 </div>
             </div>
         </div>
@@ -18,14 +21,17 @@
         <div class="col-lg-5 col-md-8 col-sm-12 col-xs-12 card card-default rounded-0 shadow border border-dark">
             <div class="card-body">
                 <div class="container-fluid">
-                    <h1 class="text-center">{{ordens|intcomma}}</h2>
-                        <h3 class="text-center"><b>Total de Ordens de Serviço</b></h3>
+                    <h1 class="text-center">{{ ordens|intcomma }}</h1>
+                    <h3 class="text-center"><b>Total de Ordens de Serviço</b></h3>
                 </div>
             </div>
         </div>
     </div>
 </section>
-</div> {% endblock pageContent %} {% block ScriptBlock %}
+</div>
+{% endblock pageContent %}
+
+{% block ScriptBlock %}
 <script>
 </script>
 {% endblock ScriptBlock %}
