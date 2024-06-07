@@ -54,9 +54,8 @@
 
     $('#uni_modal').on('shown.bs.modal', function() {
         if ($('#scanner').length > 0) {
-            scanner.stop();
             Instascan.Camera.getCameras().then(function(cameras) {
-                let rearCamera = cameras.find(camera => camera.name.toLowerCase().includes('back'));
+                let rearCamera = cameras.find(camera => camera.name.toLowerCase().includes('back')) || cameras[0];
                 if (!rearCamera) {
                     console.warn('Câmera traseira não encontrada. Usando a primeira câmera disponível.');
                     rearCamera = cameras[0];
