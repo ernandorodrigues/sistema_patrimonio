@@ -1,78 +1,89 @@
 {% load qr_code %}{% load static %}
-<!-- <script src="{% static 'assets/default/js/jquery-3.6.0.min.js' %}"></script> -->
-<script src="{% static 'assets/instascan.min.js' %}"></script>
-<style>
-    #uni_modal .modal-footer {
-        display: none;
-    }
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Exemplo de Scanner de QR Code</title>
+    <script src="{% static 'assets/instascan.min.js' %}"></script>
+    <style>
+        #uni_modal .modal-footer {
+            display: none
+        }
 
-    #uni_modal .modal-sub-footer {
-        display: flex;
-    }
+        #uni_modal .modal-sub-footer {
+            display: flex
+        }
 
-    #scanner {
-        width: 100%;
-        height: 50vh;
-        margin: 0px auto;
-        position: relative;
-        object-fit: cover;
-        object-position: center center;
-    }
+        #scanner {
+            width: 100%;
+            height: 50vh;
+            margin: 0px auto;
+            position: relative;
+            object-fit: cover;
+            object-position: center center;
+        }
 
-    #scanner-focus {
-        background: #00000085;
-        -webkit-clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
-        clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
-        height: 100%;
-        width: 100%;
-        top: 0;
-        left: 0;
-    }
-</style>
+        #scanner-focus {
+            background: #00000085;
+            -webkit-clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
+            clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
+            height: 100%;
+            width: 100%;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
 <div class="container-fluid">
     <div id="scanner-holder" class="position-relative">
         <video id="scanner"></video>
         <div id="scanner-focus" class="position-absolute"></div>
     </div>
 </div>
+
 <script>
-    const videoElement = document.getElementById('scanner');
-    const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
+    $(document).ready(function() {
+        const args = {
+            video: document.getElementById('scanner'),
+            mirror: false
+        };
 
-    scanner.addListener('scan', function(content) {
-        // alert(content);
-        $('.modal').modal('hide');
-        start_loader();
-        setTimeout(() => {
-            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-            scanner.stop();
-        }, 500);
-    });
+        window.URL.createObjectURL = (stream) => {
+            args.video.srcObject = stream;
+            return stream;
+        };
 
-    function startScanner() {
-        Instascan.Camera.getCameras().then(function(cameras) {
-            let rearCamera = cameras.find(camera => camera.name.toLowerCase().includes('back')) || cameras[0];
-            if (!rearCamera) {
-                console.warn('Câmera traseira não encontrada. Usando a primeira câmera disponível.');
-                rearCamera = cameras[0];
-            }
-            scanner.start(rearCamera).then(() => {
-                console.log('Câmera iniciada com sucesso:', rearCamera);
-            }).catch(function(e) {
-                console.error('Erro ao iniciar a câmera:', e);
-            });
-        }).catch(function(e) {
-            console.error('Erro ao acessar as câmeras:', e);
+        const scanner = new Instascan.Scanner(args);
+        scanner.addListener('scan', function(content) {
+            $('.modal').modal('hide');
+            start_loader();
+            setTimeout(() => {
+                uni_modal("Ver Detalhes do Funcionário", "{% url 'scanned-code' %}/" + content, 'modal-md');
+                scanner.stop();
+            }, 500);
         });
-    }
 
-    $('#uni_modal').on('shown.bs.modal', function() {
-        if ($('#scanner').length > 0) {
-            startScanner();
-        }
-    });
+        $('#uni_modal').on('shown.bs.modal', function() {
+            if ($('#scanner').length > 0) {
+                scanner.stop();
+                Instascan.Camera.getCameras().then(function(cameras) {
+                    if (cameras.length > 0) {
+                        scanner.start(cameras[0]);
+                    } else {
+                        console.error('Nenhuma câmera encontrada.');
+                    }
+                }).catch(function(e) {
+                    console.error(e);
+                });
+            }
+        });
 
-    $('#uni_modal').on('hide.bs.modal', function() {
-        scanner.stop();
+        $('#uni_modal').on('hide.bs.modal', function() {
+            scanner.stop();
+        });
     });
 </script>
+</body>
+</html>
