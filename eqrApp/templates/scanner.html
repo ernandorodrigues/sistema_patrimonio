@@ -3,11 +3,11 @@
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #uni_modal .modal-footer {
-        display: none
+        display: none;
     }
 
     #uni_modal .modal-sub-footer {
-        display: flex
+        display: flex;
     }
 
     #scanner {
@@ -57,6 +57,7 @@
             scanner.stop();
             navigator.mediaDevices.enumerateDevices()
             .then(devices => {
+                console.log('Dispositivos encontrados:', devices);
                 const rearCamera = devices.find(device => device.kind === 'videoinput' && device.label.toLowerCase().includes('back'));
                 if (rearCamera) {
                     const constraints = {
@@ -68,8 +69,9 @@
                 }
             })
             .then(stream => {
+                console.log('Stream obtido:', stream);
                 args.video.srcObject = stream;
-                scanner.start(args.video.srcObject);
+                return scanner.start(args.video.srcObject);
             })
             .catch(error => {
                 console.error('Erro ao acessar a câmera:', error);
