@@ -1,109 +1,80 @@
 {% load qr_code %}{% load static %}
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
-    #uni_modal .modal-footer {
-        display: none;
-    }
-
-    #uni_modal .modal-sub-footer {
-        display: flex;
-    }
-
     #scanner {
         width: 100%;
-        height: 50vh;
+        height: calc(100vh - 100px); /* Altura da tela menos a altura do botão */
         margin: 0 auto;
         position: relative;
         object-fit: cover;
-        object-position: center center;
+        object-position: center;
+    }
+
+    #scanner-holder {
+        position: relative;
+        margin-bottom: 20px; /* Espaçamento para o botão */
     }
 
     #scanner-focus {
-        background: #00000085;
-        -webkit-clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
-        clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
-        height: 100%;
-        width: 100%;
+        background: rgba(0, 0, 0, 0.5); /* Reduzindo a opacidade */
+        position: absolute;
         top: 0;
         left: 0;
+        right: 0;
+        bottom: 0;
+    }
+
+    #start-button {
+        display: block;
+        width: 100%;
+        padding: 10px 0;
+        background-color: #007bff;
+        color: #fff;
+        text-align: center;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
     }
 </style>
 <div class="container-fluid">
-    <div id="scanner-holder" class="position-relative">
+    <div id="scanner-holder">
         <video id="scanner"></video>
-        <div id="scanner-focus" class="position-absolute"></div>
+        <div id="scanner-focus"></div>
+        <button id="start-button">Iniciar Scanner</button>
     </div>
-    <div class="form-group">
-        <label for="cameraSelect">Selecione a Câmera</label>
-        <select id="cameraSelect" class="form-control">
-            <option value="environment">Traseira</option>
-            <option value="user">Frontal</option>
-        </select>
-    </div>
-    <!-- Botão para iniciar o scanner -->
-    <button id="startScannerButton" class="btn btn-primary">Iniciar Scanner</button>
 </div>
 <script>
     const videoElement = document.getElementById('scanner');
-    const cameraSelect = document.getElementById('cameraSelect');
-    let currentStream = null;
+    const startButton = document.getElementById('start-button');
     let scanner = null;
 
-    function stopCurrentStream() {
-        if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
-        }
-    }
-
-    async function startScanner(facingMode) {
-        stopCurrentStream();
-        const constraints = {
-            video: {
-                facingMode: { exact: facingMode }
-            }
-        };
+    startButton.addEventListener('click', async () => {
         try {
-            currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-            videoElement.srcObject = currentStream;
-            scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
-            scanner.addListener('scan', function (content) {
-                $('.modal').modal('hide');
-                start_loader();
-                setTimeout(() => {
-                    // Aqui você pode adicionar um log para verificar se o conteúdo do QR code está sendo corretamente capturado
-                    console.log('Conteúdo do QR code:', content);
-
-                    // Substitua esta linha com sua função uni_modal para exibir as informações do funcionário
-                    alert("Conteúdo do QR code: " + content);
-
-                    scanner.stop();
-                }, 500);
-            });
-            scanner.start();
+            if (!scanner) {
+                scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
+                scanner.addListener('scan', function(content) {
+                    $('.modal').modal('hide');
+                    start_loader();
+                    setTimeout(() => {
+                        uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
+                        scanner.stop();
+                    }, 500);
+                });
+            }
+            const cameras = await Instascan.Camera.getCameras();
+            if (cameras.length > 0) {
+                scanner.start(cameras[0]);
+            } else {
+                console.error('No cameras found.');
+            }
         } catch (error) {
-            console.error('Error accessing camera:', error);
+            console.error('Error accessing cameras:', error);
         }
-    }
-
-    cameraSelect.addEventListener('change', function () {
-        const facingMode = cameraSelect.value;
-        startScanner(facingMode);
     });
 
-    document.addEventListener('DOMContentLoaded', function () {
-        startScanner('environment'); // Iniciar com a câmera traseira como padrão
-    });
-
-    $('#uni_modal').on('hide.bs.modal', function () {
-        stopCurrentStream();
+    $('#uni_modal').on('hide.bs.modal', function() {
         if (scanner) {
             scanner.stop();
         }
-    });
-
-    // Função para iniciar o scanner quando o botão for clicado
-    document.getElementById('startScannerButton').addEventListener('click', function () {
-        const facingMode = cameraSelect.value;
-        startScanner(facingMode);
     });
 </script>
