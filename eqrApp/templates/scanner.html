@@ -1,89 +1,74 @@
-{% load qr_code %}{% load static %}
-<!doctype html>
-<html lang="pt-br">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Exemplo de Scanner de QR Code</title>
-    <script src="{% static 'assets/instascan.min.js' %}"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>QR Code Scanner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/3.3.3/adapter.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.10/vue.min.js"></script>
     <style>
-        #uni_modal .modal-footer {
-            display: none
-        }
-
-        #uni_modal .modal-sub-footer {
-            display: flex
+        #scanner-holder {
+            width: 100%;
+            height: 50vh;
+            position: relative;
+            overflow: hidden;
         }
 
         #scanner {
             width: 100%;
-            height: 50vh;
-            margin: 0px auto;
-            position: relative;
+            height: 100%;
             object-fit: cover;
-            object-position: center center;
         }
 
         #scanner-focus {
-            background: #00000085;
-            -webkit-clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
-            clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
-            height: 100%;
-            width: 100%;
+            position: absolute;
             top: 0;
             left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5); /* Adicione um fundo semi-transparente para destacar o foco */
+            box-shadow: inset 0 0 0 2px #fff; /* Adicione uma borda branca ao redor da área de foco */
+            box-sizing: border-box;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
         }
     </style>
 </head>
 <body>
-<div class="container-fluid">
-    <div id="scanner-holder" class="position-relative">
-        <video id="scanner"></video>
-        <div id="scanner-focus" class="position-absolute"></div>
+    <h1>QR CODE SCANNER</h1>
+    <br>
+    <br>
+    <p style="text-align: center;">Clique no botão abaixo para escanear um código QR</p>
+    <br>
+    <br>
+    <div align="center">
+        <button id="btn" onclick="scanQR()">Iniciar Escaneamento</button>
     </div>
-</div>
-
-<script>
-    $(document).ready(function() {
-        const args = {
-            video: document.getElementById('scanner'),
-            mirror: false
-        };
-
-        window.URL.createObjectURL = (stream) => {
-            args.video.srcObject = stream;
-            return stream;
-        };
-
-        const scanner = new Instascan.Scanner(args);
-        scanner.addListener('scan', function(content) {
-            $('.modal').modal('hide');
-            start_loader();
-            setTimeout(() => {
-                uni_modal("Ver Detalhes do Funcionário", "{% url 'scanned-code' %}/" + content, 'modal-md');
-                scanner.stop();
-            }, 500);
-        });
-
-        $('#uni_modal').on('shown.bs.modal', function() {
-            if ($('#scanner').length > 0) {
-                scanner.stop();
-                Instascan.Camera.getCameras().then(function(cameras) {
-                    if (cameras.length > 0) {
-                        scanner.start(cameras[0]);
-                    } else {
-                        console.error('Nenhuma câmera encontrada.');
-                    }
-                }).catch(function(e) {
-                    console.error(e);
-                });
-            }
-        });
-
-        $('#uni_modal').on('hide.bs.modal', function() {
-            scanner.stop();
-        });
-    });
-</script>
+    <br>
+    <br>
+    <div class="container-fluid">
+        <div id="scanner-holder" class="position-relative">
+            <video id="scanner"></video>
+            <div id="scanner-focus" class="position-absolute"></div>
+        </div>
+        <div class="form-group">
+            <label for="cameraSelect">Selecione a Câmera</label>
+            <select id="cameraSelect" class="form-control">
+                <option value="environment">Traseira</option>
+                <option value="user">Frontal</option>
+            </select>
+        </div>
+    </div>
+    <script>
+        function scanQR() {
+            // Adicione aqui a lógica para iniciar o escaneamento do QR code
+            console.log('Iniciando escaneamento...');
+        }
+    </script>
 </body>
 </html>
