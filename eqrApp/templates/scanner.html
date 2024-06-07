@@ -1,74 +1,114 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>QR Code Scanner</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <script src="https://rawgit.com/schmich/instascan-builds/master/instascan.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/webrtc-adapter/3.3.3/adapter.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.10/vue.min.js"></script>
-    <style>
-        #scanner-holder {
-            width: 100%;
-            height: 50vh;
-            position: relative;
-            overflow: hidden;
-        }
+{% load qr_code %}{% load static %}
+<script src="{% static 'assets/instascan.min.js' %}"></script>
+<style>
+    #uni_modal .modal-footer {
+        display: none;
+    }
 
-        #scanner {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
+    #uni_modal .modal-sub-footer {
+        display: flex;
+    }
 
-        #scanner-focus {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5); /* Adicione um fundo semi-transparente para destacar o foco */
-            box-shadow: inset 0 0 0 2px #fff; /* Adicione uma borda branca ao redor da área de foco */
-            box-sizing: border-box;
-        }
+    #scanner {
+        width: 100%;
+        height: 50vh;
+        margin: 0 auto;
+        position: relative;
+        object-fit: cover;
+        object-position: center center;
+    }
 
-        .form-group {
-            margin-bottom: 20px;
-        }
-    </style>
-</head>
-<body>
-    <h1>QR CODE SCANNER</h1>
-    <br>
-    <br>
-    <p style="text-align: center;">Clique no botão abaixo para escanear um código QR</p>
-    <br>
-    <br>
-    <div align="center">
-        <button id="btn" onclick="scanQR()">Iniciar Escaneamento</button>
+    #scanner-focus {
+        background: #00000085;
+        -webkit-clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
+        clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
+        height: 100%;
+        width: 100%;
+        top: 0;
+        left: 0;
+    }
+
+    .status-message {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        color: white;
+        font-size: 18px;
+    }
+</style>
+<div class="container-fluid">
+    <div id="scanner-holder" class="position-relative">
+        <video id="scanner"></video>
+        <div id="scanner-focus" class="position-absolute"></div>
+        <div class="status-message">Iniciando o scanner...</div>
     </div>
-    <br>
-    <br>
-    <div class="container-fluid">
-        <div id="scanner-holder" class="position-relative">
-            <video id="scanner"></video>
-            <div id="scanner-focus" class="position-absolute"></div>
-        </div>
-        <div class="form-group">
-            <label for="cameraSelect">Selecione a Câmera</label>
-            <select id="cameraSelect" class="form-control">
-                <option value="environment">Traseira</option>
-                <option value="user">Frontal</option>
-            </select>
-        </div>
+    <div class="form-group">
+        <label for="cameraSelect">Selecione a Câmera</label>
+        <select id="cameraSelect" class="form-control">
+            <option value="environment">Traseira</option>
+            <option value="user">Frontal</option>
+        </select>
     </div>
-    <script>
-        function scanQR() {
-            // Adicione aqui a lógica para iniciar o escaneamento do QR code
-            console.log('Iniciando escaneamento...');
+    <button id="restartScanner" class="btn btn-primary">Reiniciar Scanner</button>
+</div>
+<script>
+    const videoElement = document.getElementById('scanner');
+    const cameraSelect = document.getElementById('cameraSelect');
+    const restartScannerBtn = document.getElementById('restartScanner');
+    let currentStream = null;
+    let scanner = null;
+
+    function stopCurrentStream() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
         }
-    </script>
-</body>
-</html>
+    }
+
+    function startScanner(facingMode) {
+        stopCurrentStream();
+        const constraints = {
+            video: {
+                facingMode: facingMode
+            }
+        };
+        navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
+            currentStream = stream;
+            videoElement.srcObject = stream;
+            videoElement.play();
+            scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
+            scanner.addListener('scan', function (content) {
+                $('.modal').modal('hide');
+                start_loader();
+                setTimeout(() => {
+                    uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
+                    scanner.stop();
+                }, 500);
+            });
+            scanner.start();
+            $('.status-message').text('Scanner iniciado. Aponte para o QR code.');
+        }).catch(function (e) {
+            console.error(e);
+            $('.status-message').text('Erro ao iniciar o scanner: ' + e.message);
+        });
+    }
+
+    cameraSelect.addEventListener('change', function () {
+        const facingMode = cameraSelect.value;
+        startScanner(facingMode);
+    });
+
+    restartScannerBtn.addEventListener('click', function () {
+        startScanner(cameraSelect.value);
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        startScanner('environment'); // Default to back camera
+    });
+
+    $('#uni_modal').on('hide.bs.modal', function () {
+        if (scanner) {
+            scanner.stop();
+            stopCurrentStream();
+        }
+    });
+</script>
