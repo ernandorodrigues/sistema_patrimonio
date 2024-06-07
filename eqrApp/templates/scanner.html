@@ -1,8 +1,6 @@
-{% load qr_code %}
-{% load static %}
-
+{% load qr_code %}{% load static %}
+<!-- <script src="{% static 'assets/default/js/jquery-3.6.0.min.js' %}"></script> -->
 <script src="{% static 'assets/instascan.min.js' %}"></script>
-
 <style>
     #uni_modal .modal-footer {
         display: none;
@@ -15,7 +13,7 @@
     #scanner {
         width: 100%;
         height: 50vh;
-        margin: 0px auto;
+        margin: 0 auto;
         position: relative;
         object-fit: cover;
         object-position: center center;
@@ -31,14 +29,12 @@
         left: 0;
     }
 </style>
-
 <div class="container-fluid">
     <div id="scanner-holder" class="position-relative">
         <video id="scanner"></video>
         <div id="scanner-focus" class="position-absolute"></div>
     </div>
 </div>
-
 <script>
     const videoElement = document.getElementById('scanner');
     let currentStream = null;
@@ -65,8 +61,7 @@
     }
 
     const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
-
-    scanner.addListener('scan', function(content) {
+    scanner.addListener('scan', function (content) {
         $('.modal').modal('hide');
         start_loader();
         setTimeout(() => {
@@ -76,12 +71,12 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        startScanner('environment'); // Use 'environment' to specify the back camera
+        startScanner('environment'); // Inicia com a câmera traseira
         Instascan.Camera.getCameras().then(function (cameras) {
             if (cameras.length > 0) {
                 scanner.start(cameras[0]);
             } else {
-                console.error('No cameras found.');
+                console.error('Nenhuma câmera encontrada.');
             }
         }).catch(function (e) {
             console.error(e);
@@ -91,7 +86,7 @@
     $('#uni_modal').on('shown.bs.modal', function () {
         if ($('#scanner').length > 0) {
             scanner.stop();
-            startScanner('environment'); // Use 'environment' to specify the back camera
+            startScanner('environment'); // Inicia com a câmera traseira
         }
     });
 
