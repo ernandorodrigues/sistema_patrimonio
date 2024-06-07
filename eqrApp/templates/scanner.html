@@ -1,80 +1,64 @@
 {% load qr_code %}{% load static %}
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
+    #uni_modal .modal-footer {
+        display: none;
+    }
+
+    #uni_modal .modal-sub-footer {
+        display: flex;
+    }
+
     #scanner {
         width: 100%;
-        height: calc(100vh - 100px); /* Altura da tela menos a altura do botão */
+        height: 50vh;
         margin: 0 auto;
         position: relative;
         object-fit: cover;
-        object-position: center;
-    }
-
-    #scanner-holder {
-        position: relative;
-        margin-bottom: 20px; /* Espaçamento para o botão */
+        object-position: center center;
     }
 
     #scanner-focus {
-        background: rgba(0, 0, 0, 0.5); /* Reduzindo a opacidade */
-        position: absolute;
+        background: rgba(0, 0, 0, 0.53);
+        height: 100%;
+        width: 100%;
         top: 0;
         left: 0;
-        right: 0;
-        bottom: 0;
-    }
-
-    #start-button {
-        display: block;
-        width: 100%;
-        padding: 10px 0;
-        background-color: #007bff;
-        color: #fff;
-        text-align: center;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
+        position: absolute;
     }
 </style>
 <div class="container-fluid">
-    <div id="scanner-holder">
+    <div id="scanner-holder" class="position-relative">
         <video id="scanner"></video>
         <div id="scanner-focus"></div>
-        <button id="start-button">Iniciar Scanner</button>
     </div>
 </div>
 <script>
     const videoElement = document.getElementById('scanner');
-    const startButton = document.getElementById('start-button');
-    let scanner = null;
+    const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
 
-    startButton.addEventListener('click', async () => {
-        try {
-            if (!scanner) {
-                scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
-                scanner.addListener('scan', function(content) {
-                    $('.modal').modal('hide');
-                    start_loader();
-                    setTimeout(() => {
-                        uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-                        scanner.stop();
-                    }, 500);
-                });
-            }
-            const cameras = await Instascan.Camera.getCameras();
+    scanner.addListener('scan', function (content) {
+        $('.modal').modal('hide');
+        start_loader();
+        setTimeout(() => {
+            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
+            scanner.stop();
+        }, 500);
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        Instascan.Camera.getCameras().then(function (cameras) {
             if (cameras.length > 0) {
                 scanner.start(cameras[0]);
             } else {
                 console.error('No cameras found.');
             }
-        } catch (error) {
-            console.error('Error accessing cameras:', error);
-        }
+        }).catch(function (e) {
+            console.error(e);
+        });
     });
 
-    $('#uni_modal').on('hide.bs.modal', function() {
-        if (scanner) {
-            scanner.stop();
-        }
+    $('#uni_modal').on('hide.bs.modal', function () {
+        scanner.stop();
     });
 </script>
