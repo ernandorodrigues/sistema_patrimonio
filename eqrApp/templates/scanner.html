@@ -58,14 +58,18 @@
             navigator.mediaDevices.enumerateDevices()
             .then(devices => {
                 console.log('Dispositivos encontrados:', devices);
-                const rearCamera = devices.find(device => device.kind === 'videoinput' && device.label.toLowerCase().includes('back'));
+                let rearCamera = devices.find(device => device.kind === 'videoinput' && device.label.toLowerCase().includes('back'));
+                if (!rearCamera) {
+                    console.warn('Câmera traseira não encontrada. Usando a primeira câmera disponível.');
+                    rearCamera = devices.find(device => device.kind === 'videoinput');
+                }
                 if (rearCamera) {
                     const constraints = {
                         video: { deviceId: { exact: rearCamera.deviceId } }
                     };
                     return navigator.mediaDevices.getUserMedia(constraints);
                 } else {
-                    throw new Error('Câmera traseira não encontrada.');
+                    throw new Error('Nenhuma câmera disponível.');
                 }
             })
             .then(stream => {
