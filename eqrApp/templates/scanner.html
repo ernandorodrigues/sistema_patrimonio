@@ -40,17 +40,31 @@
 </div>
 
 <script>
-    const args = {
-        video: document.getElementById('scanner'),
-        mirror: false
-    };
+    const videoElement = document.getElementById('scanner');
+    let currentStream = null;
 
-    window.URL.createObjectURL = (stream) => {
-        args.video.srcObject = stream;
-        return stream;
-    };
+    function stopCurrentStream() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+    }
 
-    const scanner = new Instascan.Scanner(args);
+    function startScanner(facingMode) {
+        stopCurrentStream();
+        const constraints = {
+            video: {
+                facingMode: facingMode
+            }
+        };
+        navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
+            currentStream = stream;
+            videoElement.srcObject = stream;
+        }).catch(function (e) {
+            console.error(e);
+        });
+    }
+
+    const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
 
     scanner.addListener('scan', function(content) {
         $('.modal').modal('hide');
@@ -61,22 +75,28 @@
         }, 500);
     });
 
-    $('#uni_modal').on('shown.bs.modal', function() {
+    document.addEventListener('DOMContentLoaded', function () {
+        startScanner('environment'); // Use 'environment' to specify the back camera
+        Instascan.Camera.getCameras().then(function (cameras) {
+            if (cameras.length > 0) {
+                scanner.start(cameras[0]);
+            } else {
+                console.error('No cameras found.');
+            }
+        }).catch(function (e) {
+            console.error(e);
+        });
+    });
+
+    $('#uni_modal').on('shown.bs.modal', function () {
         if ($('#scanner').length > 0) {
             scanner.stop();
-            Instascan.Camera.getCameras().then(function(cameras) {
-                if (cameras.length > 0) {
-                    scanner.start(cameras[0]);
-                } else {
-                    console.error('No cameras found.');
-                }
-            }).catch(function(e) {
-                console.error(e);
-            });
+            startScanner('environment'); // Use 'environment' to specify the back camera
         }
     });
 
-    $('#uni_modal').on('hide.bs.modal', function() {
+    $('#uni_modal').on('hide.bs.modal', function () {
         scanner.stop();
+        stopCurrentStream();
     });
 </script>
