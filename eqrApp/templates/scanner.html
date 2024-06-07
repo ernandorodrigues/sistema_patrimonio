@@ -1,14 +1,13 @@
-{% load qr_code %}
-{% load static %}
+{% load qr_code %}{% load static %}
 <!-- <script src="{% static 'assets/default/js/jquery-3.6.0.min.js' %}"></script> -->
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #uni_modal .modal-footer {
-        display: none;
+        display: none
     }
 
     #uni_modal .modal-sub-footer {
-        display: flex;
+        display: flex
     }
 
     #scanner {
@@ -33,7 +32,9 @@
 <div class="container-fluid">
     <div id="scanner-holder" class="position-relative">
         <video id="scanner"></video>
-        <div id="scanner-focus" class="position-absolute"></div>
+        <div id="scanner-focus" class="position-absolute">
+
+        </div>
     </div>
 </div>
 <script>
@@ -61,8 +62,8 @@
         if ($('#scanner').length > 0) {
             scanner.stop()
             Instascan.Camera.getCameras().then(function(cameras) {
-                if (cameras.length > 0) {
-                    scanner.start(cameras[0]);
+                if (cameras.length > 1) {
+                    scanner.start(cameras[1]);
                 } else {
                     console.error('No cameras found.');
                 }
