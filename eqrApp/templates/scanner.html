@@ -1,18 +1,20 @@
-{% load qr_code %}{% load static %}
+{% load qr_code %}
+{% load static %}
+<!-- <script src="{% static 'assets/default/js/jquery-3.6.0.min.js' %}"></script> -->
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
     #uni_modal .modal-footer {
-        display: none;
+        display: none
     }
 
     #uni_modal .modal-sub-footer {
-        display: flex;
+        display: flex
     }
 
     #scanner {
         width: 100%;
         height: 50vh;
-        margin: 0 auto;
+        margin: 0px auto;
         position: relative;
         object-fit: cover;
         object-position: center center;
@@ -47,36 +49,47 @@
 
     const scanner = new Instascan.Scanner(args);
     scanner.addListener('scan', function(content) {
-        $('.modal').modal('hide');
-        start_loader();
+        // alert(content);
+        $('.modal').modal('hide')
+        start_loader()
         setTimeout(() => {
-            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-            scanner.stop();
-        }, 500);
+            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md')
+            scanner.stop()
+        }, 500)
     });
 
     $('#uni_modal').on('shown.bs.modal', function() {
         if ($('#scanner').length > 0) {
-            scanner.stop();
-            Instascan.Camera.getCameras().then(function(cameras) {
-                if (cameras.length > 0) {
-                    // Verifica se é um dispositivo iOS
-                    if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
-                        // Configura as restrições para usar a câmera traseira ('environment')
-                        const constraints = {
-                            video: {
-                                facingMode: { exact: "environment" }
-                            },
-                            audio: false
-                        };
-                        // Inicia o scanner com as restrições configuradas
-                        scanner.start(constraints);
-                    } else {
-                        // Inicia o scanner com a primeira câmera disponível
-                        scanner.start(cameras[0]);
+            scanner.stop()
+            Instascan.Camera.getCameras().then(function(devices) {
+                var videoDevices = devices.filter(function(device) {
+                    return device.kind === 'videoinput';
+                });
+                if (videoDevices.length > 1) {
+                    var constraints = {
+                        video: {
+                            deviceId: { exact: videoDevices[videoDevices.length - 1].deviceId }
+                        },
+                        audio: false
+                    };
+                    startCapture(constraints);
+                } else if (videoDevices.length === 1) {
+                    var constraints = {
+                        video: {
+                            deviceId: { exact: videoDevices[0].deviceId }
+                        },
+                        audio: false
+                    };
+                    if (window.iOS) {
+                        constraints.video.facingMode = 'environment';
                     }
+                    startCapture(constraints);
                 } else {
-                    console.error('No cameras found.');
+                    var constraints = { video: true };
+                    if (window.iOS) {
+                        constraints.video = { facingMode: 'environment' };
+                    }
+                    startCapture(constraints);
                 }
             }).catch(function(e) {
                 console.error(e);
@@ -85,6 +98,16 @@
     });
 
     $('#uni_modal').on('hide.bs.modal', function() {
-        scanner.stop();
+        scanner.stop()
     });
+
+    function startCapture(constraints) {
+        navigator.mediaDevices.getUserMedia(constraints)
+            .then(function(stream) {
+                args.video.srcObject = stream;
+            })
+            .catch(function(error) {
+                console.error('Error accessing camera:', error);
+            });
+    }
 </script>
