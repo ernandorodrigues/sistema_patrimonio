@@ -29,13 +29,46 @@
         top: 0;
         left: 0;
     }
+
+    /* Estilo para o aviso */
+    #qr-detected-alert {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 999;
+        display: none; /* Inicia escondido */
+    }
+
+    /* Estilo para o seletor de câmera */
+    #camera-selector {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 999;
+    }
 </style>
+
+<!-- Div para exibir o aviso -->
+<div id="qr-detected-alert" class="alert alert-success" style="display: none;">
+    QR Code Detected!
+</div>
+
+<!-- Div para exibir o seletor de câmera -->
+<div id="camera-selector" class="d-none">
+    <label for="camera-select">Select Camera: </label>
+    <select id="camera-select">
+        <!-- Options will be dynamically added here -->
+    </select>
+</div>
+
 <div class="container-fluid">
     <div id="scanner-holder" class="position-relative">
         <video id="scanner"></video>
         <div id="scanner-focus" class="position-absolute"></div>
     </div>
 </div>
+
 <script>
     const args = {
         video: document.getElementById('scanner'),
@@ -48,48 +81,52 @@
     };
 
     const scanner = new Instascan.Scanner(args);
+
     scanner.addListener('scan', function(content) {
-        // alert(content);
-        $('.modal').modal('hide')
-        start_loader()
+        // Mostrar o aviso quando um código QR for identificado
+        $('#qr-detected-alert').show();
+
+        // Esconder o aviso após alguns segundos (opcional)
+        setTimeout(function() {
+            $('#qr-detected-alert').hide();
+        }, 3000); // Esconder após 3 segundos (3000 milissegundos)
+
+        $('.modal').modal('hide');
+        start_loader();
         setTimeout(() => {
-            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md')
-            scanner.stop()
-        }, 500)
+            uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
+            scanner.stop();
+        }, 500);
     });
 
     $('#uni_modal').on('shown.bs.modal', function() {
         if ($('#scanner').length > 0) {
-            scanner.stop()
-            Instascan.Camera.getCameras().then(function(devices) {
-                var videoDevices = devices.filter(function(device) {
-                    return device.kind === 'videoinput';
-                });
-                if (videoDevices.length > 1) {
-                    var constraints = {
-                        video: {
-                            deviceId: { exact: videoDevices[videoDevices.length - 1].deviceId }
-                        },
-                        audio: false
-                    };
-                    startCapture(constraints);
-                } else if (videoDevices.length === 1) {
-                    var constraints = {
-                        video: {
-                            deviceId: { exact: videoDevices[0].deviceId }
-                        },
-                        audio: false
-                    };
-                    if (window.iOS) {
-                        constraints.video.facingMode = 'environment';
-                    }
-                    startCapture(constraints);
+            scanner.stop();
+            Instascan.Camera.getCameras().then(function(cameras) {
+                if (cameras.length > 0) {
+                    // Adiciona as opções do seletor de câmera
+                    const cameraSelect = document.getElementById('camera-select');
+                    cameras.forEach((camera, index) => {
+                        const option = document.createElement('option');
+                        option.value = index;
+                        option.textContent = camera.name;
+                        cameraSelect.appendChild(option);
+                    });
+                    // Inicia a câmera traseira por padrão
+                    scanner.start(cameras[0]);
+                    // Exibe o seletor de câmera
+                    $('#camera-selector').removeClass('d-none');
+
+                    // Evento para mudar a câmera ao selecionar no seletor
+                    cameraSelect.addEventListener('change', function() {
+                        const selectedCameraIndex = parseInt(this.value);
+                        if (!isNaN(selectedCameraIndex)) {
+                            scanner.stop();
+                            scanner.start(cameras[selectedCameraIndex]);
+                        }
+                    });
                 } else {
-                    var constraints = { video: true };
-                    if (window.iOS) {
-                        constraints.video = { facingMode: 'environment' };
-                    }
-                    startCapture(constraints);
+                    console.error('No cameras found.');
                 }
             }).catch(function(e) {
                 console.error(e);
@@ -98,16 +135,6 @@
     });
 
     $('#uni_modal').on('hide.bs.modal', function() {
-        scanner.stop()
+        scanner.stop();
     });
-
-    function startCapture(constraints) {
-        navigator.mediaDevices.getUserMedia(constraints)
-            .then(function(stream) {
-                args.video.srcObject = stream;
-            })
-            .catch(function(error) {
-                console.error('Error accessing camera:', error);
-            });
-    }
 </script>
