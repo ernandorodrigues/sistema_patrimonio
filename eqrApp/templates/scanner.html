@@ -70,8 +70,53 @@
         }, 500);
     });
 
+    // Verifica a disponibilidade de dispositivos de vídeo
+    navigator.mediaDevices.enumerateDevices()
+        .then(function(devices) {
+            // Filtra apenas os dispositivos de vídeo
+            var videoDevices = devices.filter(function(device) {
+                return device.kind === 'videoinput';
+            });
+
+            // Verifica o número de dispositivos de vídeo disponíveis
+            if (videoDevices.length > 1) {
+                // Se houver mais de um dispositivo, define as restrições para usar o último dispositivo disponível
+                var constraints = {
+                    video: {
+                        deviceId: { exact: videoDevices[videoDevices.length - 1].deviceId }
+                    },
+                    audio: false
+                };
+
+                // Inicia a captura de vídeo com as restrições definidas
+                startScanner(constraints);
+            } else if (videoDevices.length === 1) {
+                // Se houver apenas um dispositivo, define as restrições para usar o primeiro dispositivo disponível
+                var constraints = {
+                    video: {
+                        deviceId: { exact: videoDevices[0].deviceId }
+                    },
+                    audio: false
+                };
+
+                // Verifica se é um dispositivo iOS e configura o modo de frente para ambiente
+                if (window.iOS) {
+                    constraints.video.facingMode = 'environment';
+                }
+
+                // Inicia a captura de vídeo com as restrições definidas
+                startScanner(constraints);
+            } else {
+                // Se não houver dispositivos disponíveis, inicia a captura de vídeo sem restrições
+                startScanner({ video: true });
+            }
+        })
+        .catch(function(error) {
+            // Manipula erros ao obter dispositivos de vídeo
+            console.error('Erro ao obter dispositivos de vídeo:', error);
+        });
+
     document.addEventListener('DOMContentLoaded', function () {
-        startScanner('environment'); // Definindo a câmera traseira como padrão
         Instascan.Camera.getCameras().then(function (cameras) {
             if (cameras.length > 0) {
                 scanner.start(cameras[0]);
