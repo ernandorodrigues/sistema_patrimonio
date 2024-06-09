@@ -35,18 +35,32 @@
     </div>
 </div>
 <script>
-    const args = {
-        video: document.getElementById('scanner'),
-        mirror: false
-    };
+    const videoElement = document.getElementById('scanner');
+    let currentStream = null;
 
-    window.URL.createObjectURL = (stream) => {
-        args.video.srcObject = stream;
-        return stream;
-    };
+    function stopCurrentStream() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+        }
+    }
 
-    const scanner = new Instascan.Scanner(args);
-    scanner.addListener('scan', function(content) {
+    function startScanner(facingMode) {
+        stopCurrentStream();
+        const constraints = {
+            video: {
+                facingMode: facingMode
+            }
+        };
+        navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
+            currentStream = stream;
+            videoElement.srcObject = stream;
+        }).catch(function (e) {
+            console.error(e);
+        });
+    }
+
+    const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
+    scanner.addListener('scan', function (content) {
         $('.modal').modal('hide');
         start_loader();
         setTimeout(() => {
@@ -55,36 +69,28 @@
         }, 500);
     });
 
-    $('#uni_modal').on('shown.bs.modal', function() {
+    document.addEventListener('DOMContentLoaded', function () {
+        startScanner('environment'); // Definindo a câmera traseira como padrão
+        Instascan.Camera.getCameras().then(function (cameras) {
+            if (cameras.length > 0) {
+                scanner.start(cameras[0]);
+            } else {
+                console.error('No cameras found.');
+            }
+        }).catch(function (e) {
+            console.error(e);
+        });
+    });
+
+    $('#uni_modal').on('shown.bs.modal', function () {
         if ($('#scanner').length > 0) {
             scanner.stop();
-            Instascan.Camera.getCameras().then(function(cameras) {
-                if (cameras.length > 0) {
-                    // Verifica se é um dispositivo iOS
-                    if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) {
-                        // Configura as restrições para usar a câmera traseira ('environment')
-                        const constraints = {
-                            video: {
-                                facingMode: { exact: "environment" }
-                            },
-                            audio: false
-                        };
-                        // Inicia o scanner com as restrições configuradas
-                        scanner.start(constraints);
-                    } else {
-                        // Inicia o scanner com a primeira câmera disponível
-                        scanner.start(cameras[0]);
-                    }
-                } else {
-                    console.error('No cameras found.');
-                }
-            }).catch(function(e) {
-                console.error(e);
-            });
+            startScanner('environment'); // Definindo a câmera traseira como padrão ao abrir o modal
         }
     });
 
-    $('#uni_modal').on('hide.bs.modal', function() {
+    $('#uni_modal').on('hide.bs.modal', function () {
         scanner.stop();
+        stopCurrentStream();
     });
 </script>
