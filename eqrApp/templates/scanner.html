@@ -1,35 +1,7 @@
-{% load qr_code %}
-{% load static %}
+{% load qr_code %}{% load static %}
 <script src="{% static 'assets/instascan.min.js' %}"></script>
-<!-- Adicione a linha abaixo apenas se você precisar do jQuery -->
-<!-- <script src="{% static 'assets/default/js/jquery-3.6.0.min.js' %}"></script> -->
 <style>
-    #uni_modal .modal-footer {
-        display: none;
-    }
-
-    #uni_modal .modal-sub-footer {
-        display: flex;
-    }
-
-    #scanner {
-        width: 100%;
-        height: 50vh;
-        margin: 0 auto;
-        position: relative;
-        object-fit: cover;
-        object-position: center center;
-    }
-
-    #scanner-focus {
-        background: #00000085;
-        -webkit-clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
-        clip-path: polygon(0% 0%, 0% 100%, 25% 100%, 25% 25%, 75% 25%, 75% 75%, 25% 75%, 25% 100%, 100% 100%, 100% 0%);
-        height: 100%;
-        width: 100%;
-        top: 0;
-        left: 0;
-    }
+    /* Estilos CSS aqui */
 </style>
 
 <div class="container-fluid">
@@ -40,62 +12,71 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const videoElement = document.getElementById('scanner');
-        let currentStream = null;
+    const videoElement = document.getElementById('scanner');
+    let currentStream = null;
 
-        function stopCurrentStream() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-            }
+    function stopCurrentStream() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
         }
+    }
 
-        function startScanner(facingMode) {
-            stopCurrentStream();
-            const constraints = {
-                video: {
-                    facingMode: facingMode
-                }
-            };
-            navigator.mediaDevices.getUserMedia(constraints).then(function (stream) {
+    function startScanner(facingMode) {
+        stopCurrentStream();
+        const constraints = {
+            video: {
+                facingMode: facingMode
+            }
+        };
+        navigator.mediaDevices.getUserMedia(constraints)
+            .then(function (stream) {
                 currentStream = stream;
                 videoElement.srcObject = stream;
-            }).catch(function (e) {
-                console.error('Error accessing camera:', e);
+            })
+            .catch(function (e) {
+                console.error('Erro ao acessar a câmera:', e);
             });
-        }
+    }
 
-        const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
-        scanner.addListener('scan', function (content) {
-            $('.modal').modal('hide');
-            start_loader();
-            setTimeout(() => {
-                uni_modal("View Employee Details", "{% url 'scanned-code' %}/" + content, 'modal-md');
-                scanner.stop();
-            }, 500);
-        });
+    const scanner = new Instascan.Scanner({ video: videoElement, mirror: false });
+    scanner.addListener('scan', function (content) {
+        $('.modal').modal('hide');
+        start_loader();
+        setTimeout(() => {
+            uni_modal("Detalhes do Funcionário", "{% url 'scanned-code' %}/" + content, 'modal-md');
+            scanner.stop();
+        }, 500);
+    });
 
-        startScanner('environment'); // Definindo a câmera traseira como padrão
+    document.addEventListener('DOMContentLoaded', function () {
+        // Verificar se é um dispositivo iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+        // Definir o modo de frente como padrão se for iOS
+        const facingMode = isIOS ? 'user' : 'environment';
+        startScanner(facingMode);
+
         Instascan.Camera.getCameras().then(function (cameras) {
             if (cameras.length > 0) {
                 scanner.start(cameras[0]);
             } else {
-                console.error('No cameras found.');
+                console.error('Nenhuma câmera encontrada.');
             }
         }).catch(function (e) {
             console.error(e);
         });
+    });
 
-        $('#uni_modal').on('shown.bs.modal', function () {
-            if ($('#scanner').length > 0) {
-                scanner.stop();
-                startScanner('environment'); // Definindo a câmera traseira como padrão ao abrir o modal
-            }
-        });
-
-        $('#uni_modal').on('hide.bs.modal', function () {
+    $('#uni_modal').on('shown.bs.modal', function () {
+        if ($('#scanner').length > 0) {
             scanner.stop();
-            stopCurrentStream();
-        });
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const facingMode = isIOS ? 'user' : 'environment';
+            startScanner(facingMode);
+        }
+    });
+
+    $('#uni_modal').on('hide.bs.modal', function () {
+        scanner.stop();
+        stopCurrentStream();
     });
 </script>
