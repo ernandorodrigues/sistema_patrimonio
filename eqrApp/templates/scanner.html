@@ -1,7 +1,7 @@
 {% load qr_code %}{% load static %}
 <script src="{% static 'assets/instascan.min.js' %}"></script>
 <style>
-    /* Estilos CSS aqui */
+    /* Seus estilos CSS aqui */
 </style>
 
 <div class="container-fluid">
@@ -49,17 +49,16 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        // Verificar se é um dispositivo iOS
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-        // Definir o modo de frente como padrão se for iOS
-        const facingMode = isIOS ? 'user' : 'environment';
-        startScanner(facingMode);
+        startScanner('environment'); // Definindo a câmera traseira como padrão
 
         Instascan.Camera.getCameras().then(function (cameras) {
-            if (cameras.length > 0) {
-                scanner.start(cameras[0]);
+            // Encontrar a câmera traseira
+            const rearCamera = cameras.find(camera => camera.name.toLowerCase().includes('back'));
+            if (rearCamera) {
+                // Iniciar scanner com a câmera traseira
+                scanner.start(rearCamera);
             } else {
-                console.error('Nenhuma câmera encontrada.');
+                console.error('Câmera traseira não encontrada.');
             }
         }).catch(function (e) {
             console.error(e);
@@ -69,9 +68,7 @@
     $('#uni_modal').on('shown.bs.modal', function () {
         if ($('#scanner').length > 0) {
             scanner.stop();
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const facingMode = isIOS ? 'user' : 'environment';
-            startScanner(facingMode);
+            startScanner('environment'); // Definir a câmera traseira como padrão ao abrir o modal
         }
     });
 
